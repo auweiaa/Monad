@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System;
 public class ResourceManager : MonoBehaviour
 {
     [SerializeField] private int woodAmount = 0;
@@ -10,6 +11,8 @@ public class ResourceManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI stoneAmountText;
     [SerializeField] private TextMeshProUGUI ironAmountText;
     [SerializeField] private TextMeshProUGUI goldAmountText;
+
+    public event Action ResourcesChanged;
 
     public int GetWoodAmount()
     {
@@ -29,23 +32,45 @@ public class ResourceManager : MonoBehaviour
     }
     public void SetWoodAmount(int amount)
     {
-        woodAmount = amount;
+        woodAmount += amount;
         updateUI();
     }
     public void SetStoneAmount(int amount)
     {
-        stoneAmount = amount;
+        stoneAmount += amount;
         updateUI();
     }
     public void SetIronAmount(int amount)
     {
-        ironAmount = amount;
+        ironAmount += amount;
         updateUI();
     }
     public void SetGoldAmount(int amount)
     {
-        goldAmount = amount;
+        goldAmount += amount;
         updateUI();
+    }
+
+    public bool CanAfford(ResourceCost cost)
+    {
+        return woodAmount >= cost.wood
+            && stoneAmount >= cost.stone
+            && ironAmount >= cost.iron
+            && goldAmount >= cost.gold;
+    }
+
+    public bool TrySpend(ResourceCost cost)
+    {
+        cost = cost.ClampNonNegative();
+        if (!CanAfford(cost))
+        {
+            return false;
+        }
+        SetWoodAmount(cost.wood * -1);
+        SetStoneAmount(cost.stone * -1);
+        SetIronAmount(cost.iron * -1);
+        SetGoldAmount(cost.gold * -1);
+        return true;
     }
     void start()
     {
@@ -54,6 +79,7 @@ public class ResourceManager : MonoBehaviour
 
     void updateUI()
     {
+        ResourcesChanged?.Invoke();
         woodAmountText.text = woodAmount.ToString();
         stoneAmountText.text = stoneAmount.ToString();
         ironAmountText.text = ironAmount.ToString();

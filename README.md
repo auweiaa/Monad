@@ -105,3 +105,32 @@ git branch -d <initials>/feature/<description>
 - Never delete or ignore `.meta` files.
 - Avoid working on the same scene (`*.unity`) at the same time whenever possible.
   Scene files are merge-heavy and conflicts are difficult to resolve.
+
+---
+
+## Grid system (occupancy for pathing)
+
+We use a central `GridManager` to track **which grid cells are occupied** by gameplay objects (towers, resources, core, etc.). This data is intended to be consumed by enemy pathfinding code.
+
+### What blocks movement?
+- **Rule**: anything registered as an occupant blocks movement. A cell is walkable only if it has ground and is not occupied.
+
+### Scene setup
+- Add an empty GameObject named `GridManager` and add the `GridManager` component.
+- Assign:
+  - `Grid`: your scene `Grid`
+  - `GroundTilemap`: your ground `Tilemap` (usually named `Ground`)
+
+### Prefab / object setup
+Attach `GridOccupant` to any object that should reserve cells:
+- **Towers**: `kind = Tower`, `footprint = TowerData.Footprint`
+  - Towers placed at runtime are registered by `PlacementManager` automatically.
+- **Resources**: `kind = Resource`, `footprint = 1x1` (or larger if needed)
+  - If resources are already placed in the scene, keep `autoRegisterOnEnable = true`.
+- **Core/Base**: `kind = Core`, set the correct `footprint`, and keep `autoRegisterOnEnable = true`.
+
+### For path systems (API)
+Enemy/path systems should query `GridManager`:
+- `IsWalkable(cell)` for walkability
+- `GetNeighbors8(cell)` for 8-way neighbor expansion (diagonals included)
+

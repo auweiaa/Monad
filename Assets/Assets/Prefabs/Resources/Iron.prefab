@@ -42,6 +42,7 @@ GameObject:
   - component: {fileID: 229042825944158696}
   - component: {fileID: 6008329801412035842}
   - component: {fileID: 3904098079548370707}
+  - component: {fileID: 5339680241802613818}
   m_Layer: 6
   m_Name: Iron
   m_TagString: Resource
@@ -126,6 +127,22 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0.42}
   m_Radius: 0.41813004
+--- !u!114 &5339680241802613818
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1845226704134666625}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3f1bccc8fb1647e7b19766f242db0a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  kind: 1
+  footprint: {x: 1, y: 1}
+  autoRegisterOnEnable: 1
+  autoUnregisterOnDisable: 1
 --- !u!1 &3525692868299434522
 GameObject:
   m_ObjectHideFlags: 0

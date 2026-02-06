@@ -73,6 +73,10 @@ mono_crash.*
 *.unitypackage.meta
 *.app
 
+# MACOS DS_Store files
+.DS_Store
+**/.DS_Store
+
 # Crashlytics generated file
 crashlytics-build.properties
 

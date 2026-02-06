@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8548e10e022a9af48b65d229d5859b54, type: 3}
+  m_Name: CrystalTower
+  m_EditorClassIdentifier: 
+  towerName: CrystalTower
+  towerPrefab: {fileID: 4166282027712200728, guid: b28356aa3160b1c41b070bca197421ac, type: 3}
+  range: 5
+  health: 10
+  damage: 5
+  attackSpeed: 1
+  footprint: {x: 3, y: 3}
+  projectilePrefab: {fileID: 6427851651625820337, guid: ed19d093d52d1475cb0a1a7378c77ac3, type: 3}
+  cost:
+    wood: 10
+    stone: 0
+    iron: 0
+    gold: 0

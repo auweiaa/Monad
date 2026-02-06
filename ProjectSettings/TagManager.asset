@@ -5,11 +5,13 @@ TagManager:
   serializedVersion: 3
   tags:
   - Resource
+  - CraftingPanel
+  - Enemy
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Effects
   - Water
   - UI
   - Resource
@@ -47,6 +49,9 @@ TagManager:
     locked: 0
   - name: Foreground
     uniqueID: 2975097023
+    locked: 0
+  - name: Effects
+    uniqueID: 139144613
     locked: 0
   m_RenderingLayers:
   - Default
