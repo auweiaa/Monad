@@ -30,7 +30,7 @@ public class EnemySpawner : MonoBehaviour
         // Load the enemy prefab from Resources if not assigned
         if (enemyPrefab == null)
         {
-            enemyPrefab = Resources.Load<GameObject>("Enemy");
+            enemyPrefab = Resources.Load<GameObject>("EnemyPawn");
             if (enemyPrefab == null)
             {
                 Debug.LogError("EnemySpawner: No enemy prefab assigned and couldn't load from Resources!");
