@@ -333,4 +333,16 @@ public class PlacementManager : MonoBehaviour
             );
         }
     }
+    
+    // Public method for pathfinding - check if a cell is occupied
+    public bool IsCellOccupied(Vector3Int cell)
+    {
+        return occupiedCells.Contains(cell);
+    }
+    
+    // Public method to get all occupied cells (for debugging/pathfinding)
+    public HashSet<Vector3Int> GetOccupiedCells()
+    {
+        return new HashSet<Vector3Int>(occupiedCells);
+    }
 }
