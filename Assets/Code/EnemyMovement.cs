@@ -31,6 +31,9 @@ public class EnemyMovement : MonoBehaviour
     [Header("Attack Mode")]
     [SerializeField] private float attackModeDistance = 3f;
     [SerializeField] private bool isInAttackMode = false;
+    [SerializeField] private float attackDamage = 5f;
+    [SerializeField] private float attackInterval = 1f;
+    private float attackTimer = 0f;
     
     [Header("Debug")]
     [SerializeField] private bool showPathGizmos = true;
@@ -63,6 +66,7 @@ public class EnemyMovement : MonoBehaviour
 
     // Core reference
     private GameObject coreObject;
+    private Core coreComponent;
     
     // Pathfinding
     private List<Vector3Int> currentPath = new List<Vector3Int>();
@@ -115,6 +119,7 @@ public class EnemyMovement : MonoBehaviour
         if (coreObject != null)
         {
             targetPosition = coreObject.transform.position;
+            coreComponent = coreObject.GetComponent<Core>();
         }
         //else
         //{
@@ -168,6 +173,7 @@ public class EnemyMovement : MonoBehaviour
         UpdatePathfinding();
         CalculateMoveDirection();
         UpdateAnimator();
+        HandleAttackMode();
     }
 
     private void FixedUpdate()
@@ -208,6 +214,7 @@ public class EnemyMovement : MonoBehaviour
             if (!isInAttackMode)
             {
                 isInAttackMode = true;
+                attackTimer = 0f; // Reset attack timer when entering attack mode
                 //UnityEngine.Debug.Log($"[ATTACK MODE] {gameObject.name} entered ATTACK MODE! Distance to core: {distanceToCore:F2}");
             }
             //else
@@ -550,6 +557,30 @@ public class EnemyMovement : MonoBehaviour
         if (animParamHashes != null && animParamHashes.Contains(hash))
         {
             animator.SetFloat(hash, value, dampTime, Time.deltaTime);
+        }
+    }
+    
+    private void HandleAttackMode()
+    {
+        if (!isInAttackMode || coreComponent == null)
+        {
+            return;
+        }
+        
+        // Don't attack if core is already destroyed
+        if (coreComponent.IsDestroyed)
+        {
+            return;
+        }
+        
+        // Update attack timer
+        attackTimer += Time.deltaTime;
+        
+        // Deal damage at specified intervals
+        if (attackTimer >= attackInterval)
+        {
+            coreComponent.TakeDamage(attackDamage);
+            attackTimer = 0f; // Reset timer after attacking
         }
     }
     

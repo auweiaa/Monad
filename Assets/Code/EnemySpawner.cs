@@ -52,7 +52,7 @@ public class EnemySpawner : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(spawnInterval);
-            Debug.Log("Current Enemy Count: " + currentEnemyCount);
+            //Debug.Log("Current Enemy Count: " + currentEnemyCount);
             
             if (currentEnemyCount < maxEnemies)
             {
@@ -91,9 +91,23 @@ public class EnemySpawner : MonoBehaviour
 
     public void OnEnemyDestroyed()
     {
-        Debug.Log("Enemy destroyed on spawner " + gameObject.name + ". Count before: " + currentEnemyCount);
-        //currentEnemyCount = Mathf.Max(0, currentEnemyCount - 1);
-        Debug.Log("Count after: " + currentEnemyCount);
+        //Debug.Log("Enemy destroyed on spawner " + gameObject.name + ". Count before: " + currentEnemyCount);
+        currentEnemyCount = Mathf.Max(0, currentEnemyCount - 1);
+        //Debug.Log("Count after: " + currentEnemyCount);
+    }
+
+    /// <summary>
+    /// Kills an enemy GameObject and updates the count.
+    /// Call this method to properly remove an enemy from the game.
+    /// </summary>
+    public void KillEnemy(GameObject enemyObject)
+    {
+        if (enemyObject != null)
+        {
+            //Debug.Log("Killing enemy: " + enemyObject.name);
+            Destroy(enemyObject);
+            // Note: OnEnemyDestroyed will be called automatically by the Enemy's OnDestroy
+        }
     }
 
     private void OnDrawGizmosSelected()
@@ -129,7 +143,7 @@ public class Enemy : MonoBehaviour
 
     private void OnDestroy() 
     {
-        Debug.Log("Enemy destroyed: " + gameObject.name + " at position " + transform.position);
+        //Debug.Log("Enemy destroyed: " + gameObject.name + " at position " + transform.position);
         if (spawner != null)
         {
             spawner.OnEnemyDestroyed();

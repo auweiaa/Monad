@@ -156,6 +156,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 928c22a45a5e37541bbd40b47d76268f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  orb: {fileID: 0}
+  orbLight: {fileID: 0}
+  bobAmplitude: 0.25
+  bobSpeed: 1.5
+  maxHealth: 100
+  currentHealth: 0
+  coreParticleSystems:
+  - {fileID: 7063052536405640431}
+  - {fileID: 5180145037875611772}
+  explosionSize: 90
+  explosionDuration: 5
 --- !u!1 &1928000770005290110
 GameObject:
   m_ObjectHideFlags: 0
