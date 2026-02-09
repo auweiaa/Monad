@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System;
 
 /// <summary>
 /// Spawns enemies randomly around the map and directs them towards a target position.
@@ -25,6 +26,33 @@ public class EnemySpawner : MonoBehaviour
     private int currentEnemyCount = 0;
     private Coroutine spawnCoroutine;
 
+    //------------------- New --------------------------------
+    // For interaction with WaveManager:
+
+    private int plannedToSpawn;
+    private int spawned;
+
+    private int alive;
+    private bool finishedSpawning;
+
+    private float enemySpawnInterval;
+    private Coroutine spawnRoutine;
+    public event Action StatusChanged;
+
+    public int AliveCount => alive;
+    public bool FinishedSpawning => finishedSpawning;
+
+    public void BeginnWave(int waveLevel, int countToSpawn, float interval)
+    {
+
+    }
+
+    public void StopWave()
+    {
+
+    }
+
+    //---------------------------------------------------------
     private void Start()
     {
         // Load the enemy prefab from Resources if not assigned

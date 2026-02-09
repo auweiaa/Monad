@@ -1,5 +1,4 @@
-using System;
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class WaveManager : MonoBehaviour
@@ -7,7 +6,7 @@ public class WaveManager : MonoBehaviour
 
     private enum WaveState
     {
-        Spawning, Waiting, Break
+        Waiting, Break
     }
 
     [Header("WaveSetting")]
@@ -16,30 +15,21 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private int enemiesPerLevel = 2;
     [SerializeField] private float spawnIntervalInWave = 0.5f;
 
+    [Header("EnemySpawner")]
+    [SerializeField] private EnemySpawner enemySpawnerPrefab;
+    [SerializeField] private Transform[] enemySpawnPoints;
+    private List<EnemySpawner> activeEnemySpawners;
 
     private int level;
-    private int enemiesToSpawn;
-    private int enemiesSpawned;
-    private int enemiesAlive;
     private float breakTimer;
 
     private WaveState currentState;
-    private Coroutine spawnRoutine;
-
-    [Header("EnemySpawner")]
-    [SerializeField] private EnemySpawner enemySpawner;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        enemySpawner = FindFirstObjectByType<EnemySpawner>();
-        if (enemySpawner == null)
-        {
-            Debug.LogError("[WaveManager] No EnemySpawner found in the scene. Disabling WaveManager.");
-            enabled = false;
-            return;
-        }
+        activeEnemySpawners = new List<EnemySpawner>();
 
         currentState = WaveState.Break;
         breakTimer = breakDuration;
@@ -72,7 +62,17 @@ public class WaveManager : MonoBehaviour
 
     void HandleWaiting()
     {
-        if (enemiesSpawned == enemiesToSpawn && enemiesAlive == 0)
+        bool allSpawnerFinished = true;
+        int sumAliveEnemies = 0;
+
+        foreach (var spawner in activeEnemySpawners)
+        {
+            sumAliveEnemies += spawner.AliveCount;
+
+            if (!spawner.FinishedSpawning) allSpawnerFinished = false;    
+        }
+
+        if (allSpawnerFinished && sumAliveEnemies == 0)
         {
             currentState = WaveState.Break;
             breakTimer = breakDuration;
@@ -81,47 +81,27 @@ public class WaveManager : MonoBehaviour
 
     private void StartNextWave()
     {
-        if (currentState != WaveState.Break) return;
-        if (spawnRoutine != null)
-        {
-            StopCoroutine(spawnRoutine);
-            spawnRoutine = null;
-        }
-
         level++;
-        enemiesSpawned = 0;
-        enemiesAlive = 0;
-        enemiesToSpawn = 20; // ToDo: make it variable
-        currentState = WaveState.Spawning;
+        CreateEnemySpawnersForLevel(level);
 
-        spawnRoutine = StartCoroutine(WaveRoutine());
-    }
-
-    private IEnumerator WaveRoutine()
-    {
-        while (enemiesSpawned < enemiesToSpawn)
-        {
-            // ToDo: public in EmenySpawner
-            // enemySpawner.SpawnEnemy();
-
-            enemiesSpawned++;
-            enemiesAlive++;
-            yield return new WaitForSeconds(spawnIntervalInWave);
-        }
+        // BeginnWave(level, enemiesToSpawn, spawnIntervalInWave);
         currentState = WaveState.Waiting;
     }
 
-    public void EnemyDied()
+    private void CreateEnemySpawnersForLevel(int target)
     {
-        enemiesAlive = Math.Max(0, enemiesAlive - 1);
-    }
-
-    private void OnDisable()
-    {
-        if (spawnRoutine != null)
+        while (activeEnemySpawners.Count < target)
         {
-            StopCoroutine(spawnRoutine);
-            spawnRoutine = null;
+            if (activeEnemySpawners.Count >= enemySpawnPoints.Length)
+            {
+                Debug.LogError("Not enough enemy spawn points for level " + target);
+                return;
+            }
+
+            Transform spawnPoint = enemySpawnPoints[activeEnemySpawners.Count];
+            EnemySpawner newSpawner = Instantiate(enemySpawnerPrefab, spawnPoint.position, spawnPoint.rotation);
+            activeEnemySpawners.Add(newSpawner);
         }
     }
+
 }
