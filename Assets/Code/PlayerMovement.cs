@@ -18,6 +18,9 @@ public class PlayerMovement : MonoBehaviour
     private float nextGatherTargetCheckTime;
     private bool hasGatherTargetCached;
 
+    [SerializeField] private ParticleSystem gatherParticles;
+
+
     [Header("Placement")]
     [SerializeField, Min(0f)] private float placementRange = 5f;
 
@@ -84,6 +87,12 @@ public class PlayerMovement : MonoBehaviour
             }
             dustParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             dustParticles.Clear(true);
+        }
+
+        if (gatherParticles != null)
+        {
+            gatherParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            gatherParticles.Clear(true);
         }
 
         moveXHash = Animator.StringToHash(moveXParam);
@@ -439,22 +448,65 @@ public class PlayerMovement : MonoBehaviour
 
     private void CollectWood()
     {
+        PlayGatherParticles("wood");
         SoundManager.Instance.PlaySfx2D("wood");
+        LabelManager.Instance.SpawnLabel("+5 Wood", transform.position);
         if (resourceManager != null) resourceManager.SetWoodAmount(5);
     }
     private void CollectStone()
     {
+        PlayGatherParticles("stone");
         SoundManager.Instance.PlaySfx2D("stone");
+        LabelManager.Instance.SpawnLabel("+1 Stone", transform.position);
         if (resourceManager != null) resourceManager.SetStoneAmount(1);
     }
     private void CollectIron()
     {
+        PlayGatherParticles("iron");
         SoundManager.Instance.PlaySfx2D("stone");
+        LabelManager.Instance.SpawnLabel("+1 Iron", transform.position);
         if (resourceManager != null) resourceManager.SetIronAmount(1);
     }
     private void CollectGold()
     {
+        PlayGatherParticles("gold");
         SoundManager.Instance.PlaySfx2D("stone");
+        LabelManager.Instance.SpawnLabel("+1 Gold", transform.position);
         if (resourceManager != null) resourceManager.SetGoldAmount(1);
+    }
+
+    private void PlayGatherParticles(string resourceType)
+    {
+        if (gatherParticles != null)
+        {
+            var main = gatherParticles.main;
+            switch (resourceType)
+            {
+                case "wood":
+                    main.startColor = new ParticleSystem.MinMaxGradient(ColorFromHex("#825B5A")); // #825B5A
+                    break;
+                case "stone":
+                    main.startColor = new ParticleSystem.MinMaxGradient(ColorFromHex("#825B5A")); // #825B5A
+                    break;
+                case "iron":
+                    main.startColor = new ParticleSystem.MinMaxGradient(ColorFromHex("#5E6E8C")); // #5E6E8C
+                    break;
+                case "gold":
+                    main.startColor = new ParticleSystem.MinMaxGradient(ColorFromHex("#E5A54A")); // #E5A54A
+                    break;
+            }
+            // Restart so any preset "Burst at time 0" emission fires and uses the updated start color.
+            gatherParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            gatherParticles.Play(true);
+        }
+    }
+
+    private static Color ColorFromHex(string hex)
+    {
+        if (ColorUtility.TryParseHtmlString(hex, out Color c))
+        {
+            return c;
+        }
+        return Color.white;
     }
 }
