@@ -551,7 +551,7 @@ Camera:
   far clip plane: 1000.9
   field of view: 60
   orthographic: 1
-  orthographic size: 3.6241915
+  orthographic size: 8.4375
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -39080,6 +39080,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7791373908229295762, guid: 514ec6e53df48c847910a451274636bc, type: 3}
   m_PrefabInstance: {fileID: 1205390915}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1227559720
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1227559721}
+  m_Layer: 0
+  m_Name: SpawnPoint_Base
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1227559721
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1227559720}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -5.62, y: 0.73, z: 6.31466}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1228378064
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -40394,7 +40425,7 @@ GameObject:
   - component: {fileID: 1510554176}
   - component: {fileID: 1510554175}
   m_Layer: 0
-  m_Name: WaveManagerPrefab
+  m_Name: WaveManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -40413,11 +40444,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   breakDuration: 5
-  baseEnemiesPerWave: 5
-  enemiesPerLevel: 2
   spawnIntervalInWave: 0.5
-  enemySpawnerPrefab: {fileID: 0}
-  enemySpawnPoints: []
+  enemiesToSpawn: 250
+  enemySpawnerPrefab: {fileID: 993172737896074807, guid: dbac87b6b017d114282e908aaf727735, type: 3}
+  enemySpawnPoints:
+  - {fileID: 1227559721}
 --- !u!4 &1510554176
 Transform:
   m_ObjectHideFlags: 0
@@ -43147,6 +43178,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: EnemySpawner
       objectReference: {fileID: 0}
+    - target: {fileID: 1697263208534070955, guid: dbac87b6b017d114282e908aaf727735, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5311043389233483777, guid: dbac87b6b017d114282e908aaf727735, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -43955,3 +43990,4 @@ SceneRoots:
   - {fileID: 4127879763308333045}
   - {fileID: 1965367403}
   - {fileID: 1510554176}
+  - {fileID: 1227559721}
