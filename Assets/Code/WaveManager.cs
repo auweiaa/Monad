@@ -11,18 +11,17 @@ public class WaveManager : MonoBehaviour
 
     [Header("WaveSetting")]
     [SerializeField] private float breakDuration = 5f;
-/*    [SerializeField] private int baseEnemiesPerWave = 5;
-    [SerializeField] private int enemiesPerLevel = 2;*/
     [SerializeField] private float spawnIntervalInWave = 0.5f;
     [SerializeField] private int enemiesToSpawn = 10;
 
     [Header("EnemySpawner")]
-    [SerializeField] private EnemySpawner enemySpawnerPrefab;
-    [SerializeField] private Transform[] enemySpawnPoints;
+    [SerializeField] private EnemySpawner[] enemySpawners;
+    [SerializeField] private int levelForSpawner2 = 15;
+    [SerializeField] private int levelForSpawner3 = 30;
 
-    private readonly List<EnemySpawner> activeEnemySpawners = new List<EnemySpawner>(); // ToDo: fixed list of pre-designed EnemySpawner
 
     private int level;
+    private int activeSpawnersCount;
     private float breakTimer;
     private WaveState currentState;
 
@@ -33,18 +32,19 @@ public class WaveManager : MonoBehaviour
         currentState = WaveState.Break;
         breakTimer = breakDuration;
         level = 0;
+        activeSpawnersCount = 1;
 
-        if (enemySpawnerPrefab == null && enemySpawnPoints.Length == 0)
+        if (enemySpawners == null)
         {
-            var existing = FindFirstObjectByType<EnemySpawner>();
-            if (existing != null)
+            Debug.LogError("[WaveManager] No enemySpawner in Scene.");
+            return;
+        }
+
+        for (int i = 0; i < enemySpawners.Length; i++)
+        {
+            if (enemySpawners[i] != null)
             {
-                existing.StatusChanged += OnSpawnerStatusChanged;
-                activeEnemySpawners.Add(existing);
-            }
-            else
-            {
-                Debug.LogError("[WaveManager] No EnemySpawner in scene and no prefab/spawnpoints set.");
+                enemySpawners[i].StatusChanged += OnSpawnerStatusChanged;
             }
         }
     }
@@ -62,12 +62,14 @@ public class WaveManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        for (int i = 0; i < activeEnemySpawners.Count; i++)
+        if (enemySpawners == null) return;
+
+        for (int i = 0; i < enemySpawners.Length; i++)
         {
-            if (activeEnemySpawners[i] != null)
+            if (enemySpawners[i] != null)
             {
                 // unsubscribe each spawner
-                activeEnemySpawners[i].StatusChanged -= OnSpawnerStatusChanged;
+                enemySpawners[i].StatusChanged -= OnSpawnerStatusChanged;
             }
         }
     }
@@ -75,23 +77,27 @@ public class WaveManager : MonoBehaviour
     private void StartNextWave()
     {
 
-        Debug.Log($"[WaveManager] Starting wave {level} with {activeEnemySpawners.Count} spawners");
-
-
-        level++;
-        // enemiesToSpawn = xyz; -> making it dynamic
-
-        CreateEnemySpawnersForLevel(level); // ToDo: delete -> not needed, will be in scene
-
-        if (activeEnemySpawners.Count == 0)
+        if (enemySpawners == null || enemySpawners.Length == 0 || enemySpawners[0] == null)
         {
             Debug.LogError("[WaveManager] No active spawners available to start a wave.");
             return;
         }
 
-        foreach (var spawner in activeEnemySpawners)
+
+        // setting new level and amount of active spawner related to the level
+        level++;
+        activeSpawnersCount = GetActiveSpawnersCount(level);
+
+        Debug.Log($"Starting wave {level} with {activeSpawnersCount} active spawners");
+
+        for (int i = 0; i < activeSpawnersCount; i++)
         {
-            spawner.BeginnWave(level, enemiesToSpawn, spawnIntervalInWave);
+            if (i >= enemySpawners.Length) break;
+
+            if (enemySpawners[i] != null)
+            {
+                enemySpawners[i].BeginnWave(level, enemiesToSpawn, spawnIntervalInWave);
+            }
         }
 
         currentState = WaveState.Waiting;
@@ -99,27 +105,21 @@ public class WaveManager : MonoBehaviour
         CheckWaveCompletion();
     }
 
-    // not needed in future -> will be in scene and attached to island.
-    private void CreateEnemySpawnersForLevel(int target)
+    private int GetActiveSpawnersCount(int currentLevel)
     {
-        while (activeEnemySpawners.Count < target)
+        int count = 1;
+       
+        if (currentLevel >= levelForSpawner2) count = 2;
+        if (currentLevel >= levelForSpawner3) count = 3;
+
+        if (enemySpawners != null)
         {
-            if (activeEnemySpawners.Count >= enemySpawnPoints.Length)
-            {
-                Debug.LogError("Not enough enemy spawn points for level " + target);
-                return;
-            }
-
-            
-            Transform spawnPoint = enemySpawnPoints[activeEnemySpawners.Count];
-            EnemySpawner newSpawner = Instantiate(enemySpawnerPrefab, spawnPoint.position, spawnPoint.rotation);
-
-            //subscribe spawner
-            newSpawner.StatusChanged += OnSpawnerStatusChanged;
-            activeEnemySpawners.Add(newSpawner);
+            count = Mathf.Min(count, enemySpawners.Length);
         }
-    }
 
+        return count;
+    }
+    
     private void OnSpawnerStatusChanged(EnemySpawner spawner)
     {
         if (currentState != WaveState.Waiting) return;
@@ -129,16 +129,22 @@ public class WaveManager : MonoBehaviour
 
     private void CheckWaveCompletion()
     {
-        if (activeEnemySpawners.Count == 0) return;
+        if (enemySpawners.Length == 0) return;
 
         bool allSpawnerFinished = true;
         int totalAliveEnemies = 0;
 
-        foreach (var spawner in activeEnemySpawners)
+        for (int i = 0; i < activeSpawnersCount; i++)
         {
-            totalAliveEnemies += spawner.AliveCount;
+            if (enemySpawners[i] == null) continue;
+            
+            totalAliveEnemies += enemySpawners[i].AliveCount;
 
-            if (!spawner.FinishedSpawning) allSpawnerFinished = false;
+            if (!enemySpawners[i].FinishedSpawning)
+            {
+                allSpawnerFinished = false;
+                break;
+            }
         }
 
         if (allSpawnerFinished && totalAliveEnemies == 0)
