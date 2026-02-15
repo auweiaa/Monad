@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class WaveManager : MonoBehaviour
@@ -29,23 +28,30 @@ public class WaveManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        if (enemySpawners == null || enemySpawners.Length == 0)
+        {
+            Debug.LogError("[WaveManager] No enemy spawners are assigned in Inspector. Disabling WaveManager.");
+            enabled = false;
+            return;
+        }
+
+        //check if all spawner are assigned in the inspector
+        if (HasUnassignedSpawners())
+        {
+            Debug.LogError("[WaveManager] Invalid spawner configuration. See previous error(s). Disabling WaveManager.");
+            enabled = false;
+            return;
+        }
+
         currentState = WaveState.Break;
         breakTimer = breakDuration;
         level = 0;
         activeSpawnersCount = 1;
 
-        if (enemySpawners == null)
-        {
-            Debug.LogError("[WaveManager] No enemySpawner in Scene.");
-            return;
-        }
-
         for (int i = 0; i < enemySpawners.Length; i++)
         {
-            if (enemySpawners[i] != null)
-            {
-                enemySpawners[i].StatusChanged += OnSpawnerStatusChanged;
-            }
+            enemySpawners[i].StatusChanged -= OnSpawnerStatusChanged; // prevents phantom double events
+            enemySpawners[i].StatusChanged += OnSpawnerStatusChanged;
         }
     }
 
@@ -74,30 +80,36 @@ public class WaveManager : MonoBehaviour
         }
     }
 
-    private void StartNextWave()
+    private bool HasUnassignedSpawners()
     {
+        bool error = false;
 
-        if (enemySpawners == null || enemySpawners.Length == 0 || enemySpawners[0] == null)
+        for (int i = 0; i < enemySpawners.Length; i++)
         {
-            Debug.LogError("[WaveManager] No active spawners available to start a wave.");
-            return;
+            if (enemySpawners[i] == null)
+            {
+                Debug.LogError($"[WaveManager] EnemySpawner at array index {i} is not assigned.");
+                error = true;
+            }
         }
 
+        return error;
+    }
+
+    private void StartNextWave()
+    {
 
         // setting new level and amount of active spawner related to the level
         level++;
         activeSpawnersCount = GetActiveSpawnersCount(level);
 
-        Debug.Log($"Starting wave {level} with {activeSpawnersCount} active spawners");
+        Debug.Log($"[WaveManager] Starting wave {level} with {activeSpawnersCount} active spawner(s). Enemies per spawner: {enemiesToSpawn}, interval: {spawnIntervalInWave}s");
+
 
         for (int i = 0; i < activeSpawnersCount; i++)
         {
-            if (i >= enemySpawners.Length) break;
-
-            if (enemySpawners[i] != null)
-            {
-                enemySpawners[i].BeginnWave(level, enemiesToSpawn, spawnIntervalInWave);
-            }
+            Debug.Log($"[WaveManager] Spawner {i}: {enemySpawners[i].name} begins wave");
+            enemySpawners[i].BeginnWave(level, enemiesToSpawn, spawnIntervalInWave);
         }
 
         currentState = WaveState.Waiting;
@@ -105,17 +117,14 @@ public class WaveManager : MonoBehaviour
         CheckWaveCompletion();
     }
 
-    private int GetActiveSpawnersCount(int currentLevel)
+    private int GetActiveSpawnersCount(int waveLevel)
     {
         int count = 1;
-       
-        if (currentLevel >= levelForSpawner2) count = 2;
-        if (currentLevel >= levelForSpawner3) count = 3;
 
-        if (enemySpawners != null)
-        {
-            count = Mathf.Min(count, enemySpawners.Length);
-        }
+        if (waveLevel >= levelForSpawner2) count = 2;
+        if (waveLevel >= levelForSpawner3) count = 3;
+
+        count = Mathf.Min(count, enemySpawners.Length);
 
         return count;
     }
@@ -129,15 +138,11 @@ public class WaveManager : MonoBehaviour
 
     private void CheckWaveCompletion()
     {
-        if (enemySpawners.Length == 0) return;
-
         bool allSpawnerFinished = true;
         int totalAliveEnemies = 0;
 
         for (int i = 0; i < activeSpawnersCount; i++)
         {
-            if (enemySpawners[i] == null) continue;
-            
             totalAliveEnemies += enemySpawners[i].AliveCount;
 
             if (!enemySpawners[i].FinishedSpawning)
@@ -151,6 +156,9 @@ public class WaveManager : MonoBehaviour
         {
             currentState = WaveState.Break;
             breakTimer = breakDuration;
+
+            Debug.Log($"[WaveManager] Wave {level} completed. Break for {breakDuration}s.");
+
         }
     }
 
