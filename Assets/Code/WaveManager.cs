@@ -109,7 +109,7 @@ public class WaveManager : MonoBehaviour
         for (int i = 0; i < activeSpawnersCount; i++)
         {
             Debug.Log($"[WaveManager] Spawner {i}: {enemySpawners[i].name} begins wave");
-            enemySpawners[i].BeginnWave(level, enemiesToSpawn, spawnIntervalInWave);
+            enemySpawners[i].BeginWave(level, enemiesToSpawn, spawnIntervalInWave);
         }
 
         currentState = WaveState.Waiting;

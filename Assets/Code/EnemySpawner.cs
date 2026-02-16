@@ -21,10 +21,6 @@ public class EnemySpawner : MonoBehaviour
     
     [Header("Enemy Stats")]
     [SerializeField, Min(0.1f)] private float enemySpeed = 1f;
-    
-
-    //------------------- New --------------------------------
-    // For interaction with WaveManager:
 
     private int plannedToSpawn;
     private int enemiesSpawned;
@@ -40,7 +36,7 @@ public class EnemySpawner : MonoBehaviour
 
 
     // WaveManager calls EnemySpawner to spwan Enemies:
-    public void BeginnWave(int waveLevel, int countToSpawn, float interval)
+    public void BeginWave(int waveLevel, int countToSpawn, float interval)
     {
         Debug.Log($"[EnemySpawner] BeginWave: spawn {countToSpawn} interval {interval} at {transform.position}");
 
@@ -76,7 +72,7 @@ public class EnemySpawner : MonoBehaviour
         spawnCoroutine = StartCoroutine(SpawnEnemiesRoutine());
     }
 
-    //---------------------------------------------------------
+
     private void Start()
     {
 
