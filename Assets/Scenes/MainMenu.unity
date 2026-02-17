@@ -724,7 +724,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 324771447}
-  - component: {fileID: 324771448}
   m_Layer: 0
   m_Name: MenuManager
   m_TagString: Untagged
@@ -747,19 +746,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &324771448
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 324771446}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24cd350258897410a9cd2bd2b2d934ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameSceneName: BaseScene
 --- !u!4 &328266091 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: c37b1ccfbc7ed274eb99f9d40e72c4e6, type: 3}
@@ -1436,7 +1422,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 458574532}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1002645073}
+        m_TargetAssemblyTypeName: SeetingsMenuController, Assembly-CSharp
+        m_MethodName: ApplyGraphics
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &458574532
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3727,6 +3725,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1002645070}
   - component: {fileID: 1002645072}
+  - component: {fileID: 1002645073}
   m_Layer: 5
   m_Name: SettingsPanel
   m_TagString: Untagged
@@ -3768,6 +3767,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1002645069}
   m_CullTransparentMesh: 1
+--- !u!114 &1002645073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1002645069}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d884625b936f61f48be4b71eb2f5a1c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fullScreenToggle: {fileID: 1122292560}
+  vsyncToggle: {fileID: 2061153892}
 --- !u!4 &1032261071 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 2df72ec125264584faa40cb1beef0481, type: 3}
@@ -4312,7 +4325,7 @@ GameObject:
   - component: {fileID: 1122292559}
   - component: {fileID: 1122292560}
   m_Layer: 5
-  m_Name: Toggle
+  m_Name: Fullscreen Toggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -11641,6 +11654,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1943159252}
+  - component: {fileID: 1943159253}
   m_Layer: 5
   m_Name: MainMenuPanel
   m_TagString: Untagged
@@ -11671,6 +11685,19 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1943159253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1943159251}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24cd350258897410a9cd2bd2b2d934ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameSceneName: BaseScene
 --- !u!1001 &1963707215
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11854,7 +11881,7 @@ GameObject:
   - component: {fileID: 2061153891}
   - component: {fileID: 2061153892}
   m_Layer: 5
-  m_Name: Toggle
+  m_Name: VSync Toggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
