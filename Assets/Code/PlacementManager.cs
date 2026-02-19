@@ -29,6 +29,9 @@ public class PlacementManager : MonoBehaviour
 
     private readonly HashSet<Vector3Int> occupiedCells = new HashSet<Vector3Int>();
 
+    /// <summary>Raised whenever the occupied-cell set changes (e.g. tower placed).</summary>
+    public event System.Action OnGridChanged;
+
     private void Awake()
     {
         if (grid == null) grid = FindFirstObjectByType<Grid>();
@@ -142,6 +145,7 @@ public class PlacementManager : MonoBehaviour
             occupiedCells.Add(cell);
         }
 
+        OnGridChanged?.Invoke();
         return true;
     }
 
@@ -334,13 +338,33 @@ public class PlacementManager : MonoBehaviour
         }
     }
     
-    // Public method for pathfinding - check if a cell is occupied
+    /// <summary>Returns true when a tower occupies this cell.</summary>
     public bool IsCellOccupied(Vector3Int cell)
     {
         return occupiedCells.Contains(cell);
     }
-    
-    // Public method to get all occupied cells (for debugging/pathfinding)
+
+    /// <summary>Returns true when this cell has ground and no tower – i.e. enemies can walk through it.</summary>
+    public bool IsCellWalkable(Vector3Int cell)
+    {
+        if (groundTilemap != null && !groundTilemap.HasTile(cell)) return false;
+        return !occupiedCells.Contains(cell);
+    }
+
+    /// <summary>
+    /// Called by a PlacedTower when it is destroyed. Frees its cells and
+    /// fires OnGridChanged so enemies can recalculate their paths.
+    /// </summary>
+    public void FreeCells(Vector3Int originCell, Vector2Int footprint)
+    {
+        for (int x = 0; x < footprint.x; x++)
+        for (int y = 0; y < footprint.y; y++)
+            occupiedCells.Remove(originCell + new Vector3Int(x, y, 0));
+
+        OnGridChanged?.Invoke();
+    }
+
+    /// <summary>Returns a copy of all occupied cells (for debug / external pathfinding use).</summary>
     public HashSet<Vector3Int> GetOccupiedCells()
     {
         return new HashSet<Vector3Int>(occupiedCells);

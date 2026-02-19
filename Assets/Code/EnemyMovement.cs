@@ -1,624 +1,326 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Animator))]
 public class EnemyMovement : MonoBehaviour
 {
-    [Header("Target")]
-    private Vector2 targetPosition;
-    
-    [Header("Movement")]
-    [SerializeField] private float moveSpeed = 3f;
-    [SerializeField] private float stoppingDistance = 0.5f;
-    [SerializeField] private bool normalizeDirection = true;
-
     [Header("Pathfinding")]
-    [SerializeField] private PlacementManager placementManager;
-    [SerializeField] private Grid grid;
-    [SerializeField] private float pathRecalculationInterval = 0.5f;
-    [SerializeField] private int maxPathfindingIterations = 1000;
-    
-    [Header("Obstacle Avoidance")]
-    [SerializeField] private float obstacleCheckDistance = 1f;
-    [SerializeField] private float stuckCheckTime = 0.5f;
-    [SerializeField] private float avoidanceForce = 2f;
-    [SerializeField] private LayerMask obstacleLayer = -1;
     [SerializeField] private string coreTag = "Core";
-    [SerializeField] private float coreProximityDistance = 5f;
-    
-    [Header("Attack Mode")]
-    [SerializeField] private float attackModeDistance = 3f;
-    [SerializeField] private bool isInAttackMode = false;
-    [SerializeField] private float attackDamage = 5f;
+    [SerializeField] private float  waypointReachRadius = 0.25f;
+    [SerializeField] private int    maxAStarIterations  = 2000;
+
+    [Header("Attack")]
+    [SerializeField] private float attackRange    = 1.5f;
+    [SerializeField] private float attackDamage   = 5f;
     [SerializeField] private float attackInterval = 1f;
-    private float attackTimer = 0f;
-    
-    [Header("Debug")]
-    [SerializeField] private bool showPathGizmos = true;
-    [SerializeField] private Color pathColor = Color.yellow;
 
-    [Header("References")]
-    [SerializeField] private Rigidbody2D rb2D;
-    [SerializeField] private Animator animator;
-
-    [Header("Animator parameters (Blend Tree)")]
-    [SerializeField] private string moveXParam = "X";
-    [SerializeField] private string moveYParam = "Y";
-    [SerializeField] private string speedParam = "Speed";
-    [SerializeField] private string lastMoveXParam = "LastMoveX";
-    [SerializeField] private string lastMoveYParam = "LastMoveY";
-    [Header("Animator parameters (Actions)")]
+    [Header("Animator Parameters")]
+    [SerializeField] private string moveXParam       = "X";
+    [SerializeField] private string moveYParam       = "Y";
+    [SerializeField] private string speedParam       = "Speed";
+    [SerializeField] private string lastMoveXParam   = "LastMoveX";
+    [SerializeField] private string lastMoveYParam   = "LastMoveY";
     [SerializeField] private string isGatheringParam = "IsGathering";
+    [SerializeField] private float  animDampTime     = 0.05f;
 
-    [SerializeField] private float animatorDampTime = 0.05f;
-    [SerializeField] private bool snapAnimatorToEightDirections = true;
+    // Private references
+    private Rigidbody2D      rb2D;
+    private Animator         animator;
+    private Enemy            enemy;
+    private PlacementManager placementManager;
+    private Grid             grid;
+    private Transform        coreTransform;
+    private Core             coreComponent;
 
-    private Vector2 moveDir;
-    private Vector2 lastNonZeroMoveDir = Vector2.down;
+    // Pathfinding state
+    private List<Vector3> waypoints    = new List<Vector3>();
+    private int           waypointIndex = 0;
+    private bool          hasPath       = false;
 
-    // Obstacle avoidance tracking
-    private Vector2 lastPosition;
-    private float stuckTimer = 0f;
-    private bool isAvoiding = false;
-    private Vector2 avoidanceDirection;
+    // Attack state
+    private float attackTimer = 0f;
+    private bool  isAttacking = false;
 
-    // Core reference
-    private GameObject coreObject;
-    private Core coreComponent;
-    
-    // Pathfinding
-    private List<Vector3Int> currentPath = new List<Vector3Int>();
-    private int currentPathIndex = 0;
-    private float pathRecalculationTimer = 0f;
-    private Vector3Int lastTargetCell;
+    // Animator
+    private int          moveXHash, moveYHash, speedHash, lastMoveXHash, lastMoveYHash, isGatheringHash;
+    private HashSet<int> paramHashes  = new HashSet<int>();
+    private Vector2      lastNonZeroDir = Vector2.down;
 
-    private HashSet<int> animParamHashes;
-    private int moveXHash;
-    private int moveYHash;
-    private int speedHash;
-    private int lastMoveXHash;
-    private int lastMoveYHash;
-    private int isGatheringHash;
-
+    // -----------------------------------------------------------------------
+    // Unity lifecycle
+    // -----------------------------------------------------------------------
     private void Awake()
     {
-        if (animator == null) animator = GetComponent<Animator>();
-        if (rb2D == null) rb2D = GetComponent<Rigidbody2D>();
-        
-        //if (animator == null)
-        //{
-        //    UnityEngine.Debug.LogError($"EnemyMovement on {gameObject.name}: No Animator component found! Animations will not work.");
-        //}
-        //else if (animator.runtimeAnimatorController == null)
-        //{
-        //    UnityEngine.Debug.LogError($"EnemyMovement on {gameObject.name}: Animator has no controller assigned! Animations will not work.");
-        //}
-        
-        if (rb2D == null)
+        rb2D     = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
+        enemy    = GetComponent<Enemy>();
+
+        if (rb2D != null)
         {
-            rb2D = gameObject.AddComponent<Rigidbody2D>();
-            rb2D.gravityScale = 0f;
-            rb2D.constraints = RigidbodyConstraints2D.FreezeRotation;
+            rb2D.bodyType      = RigidbodyType2D.Kinematic;
+            rb2D.gravityScale  = 0f;
+            rb2D.constraints   = RigidbodyConstraints2D.FreezeRotation;
+            rb2D.interpolation = RigidbodyInterpolation2D.Interpolate;
         }
 
-        moveXHash = Animator.StringToHash(moveXParam);
-        moveYHash = Animator.StringToHash(moveYParam);
-        speedHash = Animator.StringToHash(speedParam);
-        lastMoveXHash = Animator.StringToHash(lastMoveXParam);
-        lastMoveYHash = Animator.StringToHash(lastMoveYParam);
+        moveXHash       = Animator.StringToHash(moveXParam);
+        moveYHash       = Animator.StringToHash(moveYParam);
+        speedHash       = Animator.StringToHash(speedParam);
+        lastMoveXHash   = Animator.StringToHash(lastMoveXParam);
+        lastMoveYHash   = Animator.StringToHash(lastMoveYParam);
         isGatheringHash = Animator.StringToHash(isGatheringParam);
 
-        CacheAnimatorParameters();
-        lastPosition = transform.position;
-        
-        // Find the core object and set target position
-        coreObject = GameObject.FindGameObjectWithTag(coreTag);
-        
-        if (coreObject != null)
+        if (animator != null)
+            foreach (AnimatorControllerParameter p in animator.parameters)
+                paramHashes.Add(p.nameHash);
+
+        placementManager = FindFirstObjectByType<PlacementManager>();
+        grid             = FindFirstObjectByType<Grid>();
+
+        GameObject coreObj = GameObject.FindGameObjectWithTag(coreTag);
+        if (coreObj != null)
         {
-            targetPosition = coreObject.transform.position;
-            coreComponent = coreObject.GetComponent<Core>();
+            coreTransform = coreObj.transform;
+            coreComponent = coreObj.GetComponent<Core>();
         }
-        //else
-        //{
-        //    UnityEngine.Debug.LogWarning($"EnemyMovement on {gameObject.name}: Core object with tag '{coreTag}' not found!");
-        //}
-        
-        // Find Grid and PlacementManager if not assigned
-        if (grid == null) grid = FindFirstObjectByType<Grid>();
-        if (placementManager == null) placementManager = FindFirstObjectByType<PlacementManager>();
-        
-        //if (grid == null)
-        //{
-        //    UnityEngine.Debug.LogWarning($"EnemyMovement on {gameObject.name}: Grid not found!");
-        //}
-        //if (placementManager == null)
-        //{
-        //    UnityEngine.Debug.LogWarning($"EnemyMovement on {gameObject.name}: PlacementManager not found!");
-        //}
     }
 
-    private void CacheAnimatorParameters()
+    private void Start()
     {
-        animParamHashes = new HashSet<int>();
-        if (animator == null) return;
+        // Recalculate whenever a tower is placed or destroyed.
+        if (placementManager != null)
+            placementManager.OnGridChanged += RecalculatePath;
 
-        foreach (AnimatorControllerParameter p in animator.parameters)
-        {
-            animParamHashes.Add(p.nameHash);
-        }
-        
-        // Debug log missing parameters
-        //if (!animParamHashes.Contains(moveXHash))
-        //    UnityEngine.Debug.LogWarning($"EnemyMovement on {gameObject.name}: Animator parameter '{moveXParam}' not found!");
-        //if (!animParamHashes.Contains(moveYHash))
-        //    UnityEngine.Debug.LogWarning($"EnemyMovement on {gameObject.name}: Animator parameter '{moveYParam}' not found!");
-        //if (!animParamHashes.Contains(speedHash))
-        //    UnityEngine.Debug.LogWarning($"EnemyMovement on {gameObject.name}: Animator parameter '{speedParam}' not found!");
-        //if (!animParamHashes.Contains(lastMoveXHash))
-        //    UnityEngine.Debug.LogWarning($"EnemyMovement on {gameObject.name}: Animator parameter '{lastMoveXParam}' not found!");
-        //if (!animParamHashes.Contains(lastMoveYHash))
-        //    UnityEngine.Debug.LogWarning($"EnemyMovement on {gameObject.name}: Animator parameter '{lastMoveYParam}' not found!");
-        if (!animParamHashes.Contains(isGatheringHash))
-            UnityEngine.Debug.LogWarning($"EnemyMovement on {gameObject.name}: Animator parameter '{isGatheringParam}' not found! Gathering animations will not play.");
-            
-        //UnityEngine.Debug.Log($"EnemyMovement on {gameObject.name}: Cached {animParamHashes.Count} animator parameters");
+        // Initial path on spawn.
+        RecalculatePath();
+    }
+
+    private void OnDestroy()
+    {
+        if (placementManager != null)
+            placementManager.OnGridChanged -= RecalculatePath;
     }
 
     private void Update()
     {
-        CheckIfStuck();
-        UpdatePathfinding();
-        CalculateMoveDirection();
-        UpdateAnimator();
-        HandleAttackMode();
-    }
+        if (coreTransform == null) return;
 
-    private void FixedUpdate()
-    {
-        MoveCharacter();
-    }
+        float distToCore = Vector2.Distance(transform.position, coreTransform.position);
 
-    private void UpdatePathfinding()
-    {
-        if (grid == null || coreObject == null) return;
-        
-        pathRecalculationTimer += Time.deltaTime;
-        
-        Vector3Int targetCell = grid.WorldToCell(coreObject.transform.position);
-        
-        // Recalculate path periodically or if target moved
-        if (pathRecalculationTimer >= pathRecalculationInterval || targetCell != lastTargetCell)
+        // Attack range: stop and damage the core.
+        if (distToCore <= attackRange)
         {
-            pathRecalculationTimer = 0f;
-            lastTargetCell = targetCell;
-            CalculatePath();
-        }
-    }
-    
-    private void CalculateMoveDirection()
-    {
-        Vector2 currentPos = (Vector2)transform.position;
-        
-        // Use core position as target if available
-        if (coreObject == null) return;
-        
-        Vector2 corePos = (Vector2)coreObject.transform.position;
-        float distanceToCore = Vector2.Distance(currentPos, corePos);
-        
-        // Check if we should enter attack mode
-        if (distanceToCore <= attackModeDistance)
-        {
-            if (!isInAttackMode)
+            isAttacking  = true;
+            attackTimer += Time.deltaTime;
+            if (attackTimer >= attackInterval)
             {
-                isInAttackMode = true;
-                attackTimer = 0f; // Reset attack timer when entering attack mode
-                //UnityEngine.Debug.Log($"[ATTACK MODE] {gameObject.name} entered ATTACK MODE! Distance to core: {distanceToCore:F2}");
+                attackTimer = 0f;
+                DamageCore();
             }
-            //else
-            //{
-            //    // Log while in attack mode (every frame for debugging)
-            //    UnityEngine.Debug.Log($"[ATTACK MODE] {gameObject.name} attacking core! Distance: {distanceToCore:F2}");
-            //}
-            // In attack mode, move directly toward core
-            moveDir = (corePos - currentPos).normalized;
-            
-            Vector2 facingDir = GetAnimatorDirection();
-            if (facingDir.sqrMagnitude > 0.0001f)
-            {
-                lastNonZeroMoveDir = facingDir;
-            }
+            UpdateAnimator(Vector2.zero);
             return;
         }
-        else
-        {
-            if (isInAttackMode)
-            {
-                isInAttackMode = false;
-                //UnityEngine.Debug.Log($"{gameObject.name} exited attack mode");
-            }
-        }
-        
-        // Use pathfinding to navigate
-        if (currentPath != null && currentPath.Count > 0 && currentPathIndex < currentPath.Count)
-        {
-            Vector3Int nextCell = currentPath[currentPathIndex];
-            Vector3 nextWaypoint = grid.GetCellCenterWorld(nextCell);
-            
-            float distanceToWaypoint = Vector2.Distance(currentPos, nextWaypoint);
-            
-            if (distanceToWaypoint < 0.3f) // Close enough to waypoint
-            {
-                currentPathIndex++;
-                if (currentPathIndex >= currentPath.Count)
-                {
-                    // Reached end of path
-                    moveDir = Vector2.zero;
-                    return;
-                }
-                nextCell = currentPath[currentPathIndex];
-                nextWaypoint = grid.GetCellCenterWorld(nextCell);
-            }
-            
-            Vector2 direction = ((Vector2)nextWaypoint - currentPos);
-            moveDir = normalizeDirection ? direction.normalized : direction;
-            
-            Vector2 facingDir = GetAnimatorDirection();
-            if (facingDir.sqrMagnitude > 0.0001f)
-            {
-                lastNonZeroMoveDir = facingDir;
-            }
-        }
-        else
-        {
-            // No valid path, stop or use fallback
-            moveDir = Vector2.zero;
-        }
-    }
 
-    private void CalculatePath()
-    {
-        if (grid == null || coreObject == null)
+        isAttacking = false;
+        attackTimer = 0f;
+
+        // No path found: accept defeat and stand still.
+        if (!hasPath || waypoints.Count == 0)
         {
-            currentPath.Clear();
+            UpdateAnimator(Vector2.zero);
             return;
         }
-        
-        Vector3Int startCell = grid.WorldToCell(transform.position);
-        Vector3Int endCell = grid.WorldToCell(coreObject.transform.position);
-        
-        currentPath = FindPath(startCell, endCell);
-        currentPathIndex = 0;
-        
-        //if (currentPath == null || currentPath.Count == 0)
-        //{
-        //    UnityEngine.Debug.LogWarning($"{gameObject.name}: No path found to core!");
-        //}
+
+        // Follow the path.
+        Vector2 target = waypoints[waypointIndex];
+        Vector2 dir    = target - (Vector2)transform.position;
+
+        if (dir.magnitude <= waypointReachRadius)
+        {
+            waypointIndex++;
+            if (waypointIndex >= waypoints.Count)
+            {
+                hasPath = false;
+                UpdateAnimator(Vector2.zero);
+                return;
+            }
+            dir = (Vector2)waypoints[waypointIndex] - (Vector2)transform.position;
+        }
+
+        Vector2 moveDir = dir.normalized;
+        float   speed   = enemy != null ? enemy.MoveSpeed : 10f;
+
+        if (rb2D != null)
+            rb2D.MovePosition(rb2D.position + moveDir * speed * Time.deltaTime);
+        else
+            transform.position += (Vector3)(moveDir * speed * Time.deltaTime);
+
+        UpdateAnimator(moveDir);
     }
-    
+
+    // -----------------------------------------------------------------------
+    // Path calculation
+    // Called on: spawn, tower placed, tower destroyed
+    // -----------------------------------------------------------------------
+    private void RecalculatePath()
+    {
+        waypoints.Clear();
+        waypointIndex = 0;
+        hasPath       = false;
+
+        if (grid == null || coreTransform == null) return;
+
+        Vector3Int start = grid.WorldToCell(transform.position);
+        Vector3Int end   = grid.WorldToCell(coreTransform.position);
+
+        List<Vector3Int> cellPath = FindPath(start, end);
+        if (cellPath == null || cellPath.Count == 0) return; // no path  give up
+
+        foreach (Vector3Int cell in cellPath)
+            waypoints.Add(grid.GetCellCenterWorld(cell));
+
+        hasPath = true;
+    }
+
+    // -----------------------------------------------------------------------
+    // A* (4-directional cardinal)
+    // -----------------------------------------------------------------------
+    private static readonly Vector3Int[] Dirs =
+    {
+        new Vector3Int( 1,  0, 0),
+        new Vector3Int(-1,  0, 0),
+        new Vector3Int( 0,  1, 0),
+        new Vector3Int( 0, -1, 0),
+    };
+
     private List<Vector3Int> FindPath(Vector3Int start, Vector3Int end)
     {
-        // A* pathfinding implementation
-        Dictionary<Vector3Int, float> gScore = new Dictionary<Vector3Int, float>();
-        Dictionary<Vector3Int, float> fScore = new Dictionary<Vector3Int, float>();
-        Dictionary<Vector3Int, Vector3Int> cameFrom = new Dictionary<Vector3Int, Vector3Int>();
-        HashSet<Vector3Int> closedSet = new HashSet<Vector3Int>();
-        
-        // Priority queue (simplified - using sorted list)
-        List<Vector3Int> openSet = new List<Vector3Int> { start };
-        
-        gScore[start] = 0;
-        fScore[start] = Heuristic(start, end);
-        
-        int iterations = 0;
-        
-        while (openSet.Count > 0 && iterations < maxPathfindingIterations)
+        var heap     = new MinHeap();
+        var gScore   = new Dictionary<Vector3Int, float>();
+        var cameFrom = new Dictionary<Vector3Int, Vector3Int>();
+        var closed   = new HashSet<Vector3Int>();
+
+        gScore[start] = 0f;
+        heap.Push(start, Heuristic(start, end));
+
+        int iter = 0;
+        while (heap.Count > 0 && iter++ < maxAStarIterations)
         {
-            iterations++;
-            
-            // Get node with lowest fScore
-            Vector3Int current = openSet[0];
-            float lowestF = fScore.ContainsKey(current) ? fScore[current] : float.MaxValue;
-            
-            for (int i = 1; i < openSet.Count; i++)
+            Vector3Int cur = heap.Pop();
+            if (cur == end) return Reconstruct(cameFrom, cur);
+            if (!closed.Add(cur)) continue;
+
+            foreach (Vector3Int d in Dirs)
             {
-                float f = fScore.ContainsKey(openSet[i]) ? fScore[openSet[i]] : float.MaxValue;
-                if (f < lowestF)
+                Vector3Int nb = cur + d;
+                if (closed.Contains(nb))        continue;
+                if (IsBlocked(nb) && nb != end) continue;
+
+                float g = gScore[cur] + 1f;
+                if (!gScore.TryGetValue(nb, out float prev) || g < prev)
                 {
-                    lowestF = f;
-                    current = openSet[i];
-                }
-            }
-            
-            if (current == end)
-            {
-                return ReconstructPath(cameFrom, current);
-            }
-            
-            openSet.Remove(current);
-            closedSet.Add(current);
-            
-            foreach (Vector3Int neighbor in GetNeighbors(current))
-            {
-                if (closedSet.Contains(neighbor)) continue;
-                if (IsCellBlocked(neighbor) && neighbor != end) continue;
-                
-                float tentativeGScore = gScore[current] + 1; // Cost is 1 per cell
-                
-                if (!gScore.ContainsKey(neighbor) || tentativeGScore < gScore[neighbor])
-                {
-                    cameFrom[neighbor] = current;
-                    gScore[neighbor] = tentativeGScore;
-                    fScore[neighbor] = gScore[neighbor] + Heuristic(neighbor, end);
-                    
-                    if (!openSet.Contains(neighbor))
-                    {
-                        openSet.Add(neighbor);
-                    }
+                    gScore[nb]   = g;
+                    cameFrom[nb] = cur;
+                    heap.Push(nb, g + Heuristic(nb, end));
                 }
             }
         }
-        
-        // No path found
-        return new List<Vector3Int>();
+        return null;
     }
-    
-    private float Heuristic(Vector3Int a, Vector3Int b)
+
+    private bool IsBlocked(Vector3Int cell)
+        => placementManager != null && placementManager.IsCellOccupied(cell);
+
+    private static float Heuristic(Vector3Int a, Vector3Int b)
+        => Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+
+    private static List<Vector3Int> Reconstruct(Dictionary<Vector3Int, Vector3Int> cameFrom, Vector3Int cur)
     {
-        // Manhattan distance
-        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
-    }
-    
-    private List<Vector3Int> GetNeighbors(Vector3Int cell)
-    {
-        List<Vector3Int> neighbors = new List<Vector3Int>
-        {
-            cell + new Vector3Int(1, 0, 0),   // Right
-            cell + new Vector3Int(-1, 0, 0),  // Left
-            cell + new Vector3Int(0, 1, 0),   // Up
-            cell + new Vector3Int(0, -1, 0),  // Down
-        };
-        
-        return neighbors;
-    }
-    
-    private bool IsCellBlocked(Vector3Int cell)
-    {
-        if (placementManager == null) return false;
-        
-        return placementManager.IsCellOccupied(cell);
-    }
-    
-    private List<Vector3Int> ReconstructPath(Dictionary<Vector3Int, Vector3Int> cameFrom, Vector3Int current)
-    {
-        List<Vector3Int> path = new List<Vector3Int> { current };
-        
-        while (cameFrom.ContainsKey(current))
-        {
-            current = cameFrom[current];
-            path.Insert(0, current);
-        }
-        
+        var path = new List<Vector3Int>();
+        while (cameFrom.ContainsKey(cur)) { path.Add(cur); cur = cameFrom[cur]; }
+        path.Add(cur);
+        path.Reverse();
         return path;
     }
 
-    private void CheckIfStuck()
+    // -----------------------------------------------------------------------
+    // Binary min-heap
+    // -----------------------------------------------------------------------
+    private class MinHeap
     {
-        Vector2 currentPos = transform.position;
-        float distanceMoved = Vector2.Distance(currentPos, lastPosition);
-        
-        // If we're trying to move but haven't moved much
-        if (moveDir.sqrMagnitude > 0.01f && distanceMoved < 0.01f)
+        private readonly List<(float f, Vector3Int cell)> data = new List<(float, Vector3Int)>();
+        public int Count => data.Count;
+
+        public void Push(Vector3Int cell, float f)
         {
-            stuckTimer += Time.deltaTime;
-            
-            if (stuckTimer >= stuckCheckTime && !isAvoiding)
+            data.Add((f, cell));
+            int i = data.Count - 1;
+            while (i > 0)
             {
-                // We're stuck, start avoiding
-                isAvoiding = true;
-                avoidanceDirection = GetAvoidanceDirection(moveDir);
-                stuckTimer = 0f;
+                int p = (i - 1) >> 1;
+                if (data[p].f <= data[i].f) break;
+                (data[p], data[i]) = (data[i], data[p]);
+                i = p;
             }
         }
-        else
+
+        public Vector3Int Pop()
         {
-            stuckTimer = 0f;
-            if (distanceMoved > 0.1f)
+            Vector3Int top = data[0].cell;
+            int last = data.Count - 1;
+            data[0] = data[last];
+            data.RemoveAt(last);
+            for (int i = 0, n = data.Count;;)
             {
-                isAvoiding = false;
+                int l = 2*i+1, r = 2*i+2, s = i;
+                if (l < n && data[l].f < data[s].f) s = l;
+                if (r < n && data[r].f < data[s].f) s = r;
+                if (s == i) break;
+                (data[i], data[s]) = (data[s], data[i]);
+                i = s;
             }
-        }
-        
-        lastPosition = currentPos;
-    }
-
-    private bool DetectObstacle(Vector2 direction)
-    {
-        if (direction.sqrMagnitude < 0.0001f) return false;
-        
-        RaycastHit2D hit = Physics2D.Raycast(
-            transform.position, 
-            direction.normalized, 
-            obstacleCheckDistance,
-            obstacleLayer
-        );
-        
-        // Don't treat Core as an obstacle
-        if (hit.collider != null && hit.collider.CompareTag(coreTag))
-        {
-            return false;
-        }
-        
-        return hit.collider != null;
-    }
-
-    private Vector2 GetAvoidanceDirection(Vector2 blockedDirection)
-    {
-        if (blockedDirection.sqrMagnitude < 0.0001f)
-            return Vector2.right;
-        
-        // Try perpendicular directions
-        Vector2 perpRight = new Vector2(-blockedDirection.y, blockedDirection.x);
-        Vector2 perpLeft = new Vector2(blockedDirection.y, -blockedDirection.x);
-        
-        // Check which perpendicular direction is clearer
-        bool rightClear = !DetectObstacle(perpRight);
-        bool leftClear = !DetectObstacle(perpLeft);
-        
-        if (rightClear && !leftClear)
-            return perpRight.normalized;
-        else if (leftClear && !rightClear)
-            return perpLeft.normalized;
-        else if (rightClear && leftClear)
-            // Both clear, pick one (slightly biased by random)
-            return (Random.value > 0.5f ? perpRight : perpLeft).normalized;
-        else
-            // Both blocked, try going back slightly at an angle
-            return (-blockedDirection + perpRight * 0.5f).normalized;
-    }
-
-    private void MoveCharacter()
-    {
-        if (moveDir.sqrMagnitude <= 0.0001f)
-        {
-            return;
-        }
-
-        Vector2 delta = moveDir * moveSpeed * Time.fixedDeltaTime;
-
-        if (rb2D != null)
-        {
-            rb2D.MovePosition(rb2D.position + delta);
-        }
-        else
-        {
-            transform.position += (Vector3)delta;
+            return top;
         }
     }
 
-    private void UpdateAnimator()
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+    private void DamageCore()
     {
-        if (animator == null)
-        {
-            return;
-        }
-
-        Vector2 animDir = GetAnimatorDirection();
-        float speed = moveDir.magnitude;
-
-        TrySetFloat(moveXHash, animDir.x, animatorDampTime);
-        TrySetFloat(moveYHash, animDir.y, animatorDampTime);
-
-        TrySetFloat(speedHash, speed, animatorDampTime);
-
-        TrySetFloat(lastMoveXHash, lastNonZeroMoveDir.x, animatorDampTime);
-        TrySetFloat(lastMoveYHash, lastNonZeroMoveDir.y, animatorDampTime);
-        
-        // If your Animator has an "IsGathering" bool, drive it from the attack mode state.
-        if (animParamHashes != null && animParamHashes.Contains(isGatheringHash))
-        {
-            animator.SetBool(isGatheringHash, isInAttackMode);
-        }
-        
-        //// Debug logging (remove after fixing)
-        //if (Time.frameCount % 60 == 0) // Log once per second at 60fps
-        //{
-        //    UnityEngine.Debug.Log($"Enemy {gameObject.name} - Speed: {speed:F2}, Dir: ({animDir.x:F2}, {animDir.y:F2}), MoveDir: ({moveDir.x:F2}, {moveDir.y:F2})");
-        //}
+        if (coreComponent == null || coreComponent.IsDestroyed) return;
+        coreComponent.TakeDamage(enemy != null ? enemy.AttackDamage : attackDamage);
     }
 
-    private Vector2 GetAnimatorDirection()
+    private void UpdateAnimator(Vector2 moveDir)
     {
-        Vector2 dir = moveDir;
-
-        if (snapAnimatorToEightDirections && dir.sqrMagnitude > 0.0001f)
-        {
-            dir = SnapToEightDirections(dir);
-        }
-
-        return dir;
+        if (animator == null) return;
+        Vector2 animDir = moveDir.sqrMagnitude > 0.0001f ? SnapTo8(moveDir) : Vector2.zero;
+        float   speed   = moveDir.magnitude;
+        if (animDir.sqrMagnitude > 0.0001f) lastNonZeroDir = animDir;
+        TrySetFloat(moveXHash,     animDir.x,        animDampTime);
+        TrySetFloat(moveYHash,     animDir.y,        animDampTime);
+        TrySetFloat(speedHash,     speed,            animDampTime);
+        TrySetFloat(lastMoveXHash, lastNonZeroDir.x, animDampTime);
+        TrySetFloat(lastMoveYHash, lastNonZeroDir.y, animDampTime);
+        TrySetBool (isGatheringHash, isAttacking);
     }
 
-    private Vector2 SnapToEightDirections(Vector2 dir)
+    private static Vector2 SnapTo8(Vector2 dir)
     {
-        if (dir.sqrMagnitude <= 0.0001f) return dir;
-
-        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        float snapped = Mathf.Round(angle / 45f) * 45f;
-        float rad = snapped * Mathf.Deg2Rad;
-
+        float rad = Mathf.Round(Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg / 45f) * 45f * Mathf.Deg2Rad;
         return new Vector2(Mathf.Cos(rad), Mathf.Sin(rad));
     }
 
-    private void TrySetFloat(int hash, float value, float dampTime)
+    private void TrySetFloat(int hash, float value, float damp)
     {
-        if (animParamHashes != null && animParamHashes.Contains(hash))
-        {
-            animator.SetFloat(hash, value, dampTime, Time.deltaTime);
-        }
+        if (paramHashes.Contains(hash)) animator.SetFloat(hash, value, damp, Time.deltaTime);
     }
-    
-    private void HandleAttackMode()
+
+    private void TrySetBool(int hash, bool value)
     {
-        if (!isInAttackMode || coreComponent == null)
-        {
-            return;
-        }
-        
-        // Don't attack if core is already destroyed
-        if (coreComponent.IsDestroyed)
-        {
-            return;
-        }
-        
-        // Update attack timer
-        attackTimer += Time.deltaTime;
-        
-        // Deal damage at specified intervals
-        if (attackTimer >= attackInterval)
-        {
-            coreComponent.TakeDamage(attackDamage);
-            attackTimer = 0f; // Reset timer after attacking
-        }
-    }
-    
-    // Debug visualization
-    private void OnDrawGizmos()
-    {
-        if (!showPathGizmos || grid == null || currentPath == null || currentPath.Count == 0)
-            return;
-        
-        Gizmos.color = pathColor;
-        
-        for (int i = 0; i < currentPath.Count - 1; i++)
-        {
-            Vector3 current = grid.GetCellCenterWorld(currentPath[i]);
-            Vector3 next = grid.GetCellCenterWorld(currentPath[i + 1]);
-            Gizmos.DrawLine(current, next);
-            Gizmos.DrawSphere(current, 0.1f);
-        }
-        
-        if (currentPath.Count > 0)
-        {
-            Vector3 last = grid.GetCellCenterWorld(currentPath[currentPath.Count - 1]);
-            Gizmos.DrawSphere(last, 0.1f);
-        }
-        
-        // Draw current waypoint
-        if (currentPathIndex < currentPath.Count)
-        {
-            Gizmos.color = Color.green;
-            Vector3 waypoint = grid.GetCellCenterWorld(currentPath[currentPathIndex]);
-            Gizmos.DrawWireSphere(waypoint, 0.3f);
-        }
-        
-        // Draw attack mode radius
-        if (coreObject != null)
-        {
-            Gizmos.color = isInAttackMode ? Color.red : new Color(1f, 0.5f, 0f, 0.3f);
-            Gizmos.DrawWireSphere(coreObject.transform.position, attackModeDistance);
-        }
+        if (paramHashes.Contains(hash)) animator.SetBool(hash, value);
     }
 }
+

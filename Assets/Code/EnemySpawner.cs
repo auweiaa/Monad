@@ -173,24 +173,3 @@ public class EnemySpawner : MonoBehaviour
         Gizmos.DrawWireSphere(prefabCenter, minSpawnDistance);
     }
 }
-
-
-[DisallowMultipleComponent]
-public class Enemy : MonoBehaviour
-{
-    private EnemySpawner spawner;
-
-    public void Initialize(Vector2 target, float speed, EnemySpawner parentSpawner)
-    {
-        spawner = parentSpawner;
-    }
-
-    private void OnDestroy() 
-    {
-        //Debug.Log("Enemy destroyed: " + gameObject.name + " at position " + transform.position);
-        if (spawner != null)
-        {
-            spawner.OnEnemyDestroyed();
-        }
-    }
-}

@@ -12,9 +12,17 @@ public class PlacedTower : MonoBehaviour
 
     public void Initialize(TowerData data, Vector3Int origin, Vector2Int footprint)
     {
-        towerData = data;
+        towerData  = data;
         originCell = origin;
         this.footprint = footprint;
+    }
+
+    private void OnDestroy()
+    {
+        // Notify PlacementManager so it frees cells and enemies can re-route.
+        PlacementManager pm = FindFirstObjectByType<PlacementManager>();
+        if (pm != null)
+            pm.FreeCells(originCell, footprint);
     }
 }
 
