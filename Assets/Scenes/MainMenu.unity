@@ -291,8 +291,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 508.91483, y: 127.33049}
-  m_SizeDelta: {x: 26.6397, y: 27.4152}
+  m_AnchoredPosition: {x: 509.2, y: 127.49863}
+  m_SizeDelta: {x: 29.3896, y: 29.6273}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &148241808
 MonoBehaviour:
@@ -337,7 +337,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 148241809}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1002645073}
+        m_TargetAssemblyTypeName: SettingsMenuController, Assembly-CSharp
+        m_MethodName: SwitchResolutionRight
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &148241809
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -410,8 +422,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 60, y: 193}
-  m_SizeDelta: {x: 1500, y: 200}
+  m_AnchoredPosition: {x: 269, y: 166.8}
+  m_SizeDelta: {x: 288, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &149927982
 MonoBehaviour:
@@ -433,9 +445,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '
-
-    VSync
+  m_text: 'VSync
 
 '
   m_isRightToLeft: 0
@@ -472,7 +482,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -502,7 +512,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 773.1866, y: 33.911934, z: 299.6241, w: 85.90957}
+  m_margin: {x: 0.22018443, y: 0.7502785, z: 0.49781796, w: 0.081083275}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -724,6 +734,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 324771447}
+  - component: {fileID: 324771448}
   m_Layer: 0
   m_Name: MenuManager
   m_TagString: Untagged
@@ -746,6 +757,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &324771448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 324771446}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df91e54657560e34b827ccd79321599b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainMenuPanel: {fileID: 1943159251}
+  settingsMenuPanel: {fileID: 1002645069}
 --- !u!4 &328266091 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: c37b1ccfbc7ed274eb99f9d40e72c4e6, type: 3}
@@ -1255,7 +1280,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 6, y: -453}
+  m_AnchoredPosition: {x: -40, y: -453}
   m_SizeDelta: {x: 180, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &435260292
@@ -1301,7 +1326,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 435260293}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1002645073}
+        m_TargetAssemblyTypeName: SettingsMenuController, Assembly-CSharp
+        m_MethodName: OpenMainMenu
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &435260293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1376,7 +1413,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 6, y: -78}
+  m_AnchoredPosition: {x: -40, y: -78}
   m_SizeDelta: {x: 180, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &458574531
@@ -2443,8 +2480,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 322, y: 348}
-  m_SizeDelta: {x: 1500, y: 200}
+  m_AnchoredPosition: {x: 281, y: 340}
+  m_SizeDelta: {x: 625.7456, y: 218.7608}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &783318281
 MonoBehaviour:
@@ -2683,8 +2720,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -303.3, y: -38.4}
-  m_SizeDelta: {x: 1500, y: 200}
+  m_AnchoredPosition: {x: 0.00057316, y: -0.5}
+  m_SizeDelta: {x: 210.01, y: 23.166}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &808107349
 MonoBehaviour:
@@ -2706,9 +2743,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '
-
-    1920 x 1080
+  m_text: '1920 x 1080
 
 '
   m_isRightToLeft: 0
@@ -2737,15 +2772,15 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 21.25
-  m_fontSizeBase: 15
+  m_fontSize: 21
+  m_fontSizeBase: 21
   m_fontWeight: 400
-  m_enableAutoSizing: 1
+  m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -2775,7 +2810,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 933.9809, y: 43.035152, z: 318.83823, w: 114.45165}
+  m_margin: {x: 0.4227829, y: -0.25719547, z: -0.6764755, w: -0.2027979}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -3449,7 +3484,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 952379048}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1943159253}
+        m_TargetAssemblyTypeName: MainMenuController, Assembly-CSharp
+        m_MethodName: OpenSettingsMenu
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &952379048
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3576,7 +3623,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -55}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &994456640
@@ -3732,7 +3779,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1002645070
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3781,6 +3828,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   fullScreenToggle: {fileID: 1122292560}
   vsyncToggle: {fileID: 2061153892}
+  menuManager: {fileID: 324771448}
+  resolutionLabel: {fileID: 808107349}
 --- !u!4 &1032261071 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 2df72ec125264584faa40cb1beef0481, type: 3}
@@ -4019,8 +4068,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 80, y: 211}
-  m_SizeDelta: {x: 1500, y: 200}
+  m_AnchoredPosition: {x: 285, y: 231}
+  m_SizeDelta: {x: 390.1527, y: 154.6057}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1063259831
 MonoBehaviour:
@@ -4109,7 +4158,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 773.1866, y: 4.5216923, z: 299.6241, w: 85.90957}
+  m_margin: {x: 2.3144226, y: -1.8142298, z: -0.27703857, w: -0.68153757}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -4229,8 +4278,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 181.89954, y: 128.61392}
-  m_SizeDelta: {x: 26.6397, y: 27.4152}
+  m_AnchoredPosition: {x: 178.2, y: 127.6}
+  m_SizeDelta: {x: 29.287, y: 29.6355}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1094870294
 MonoBehaviour:
@@ -4275,7 +4324,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1094870295}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1002645073}
+        m_TargetAssemblyTypeName: SettingsMenuController, Assembly-CSharp
+        m_MethodName: SwitchResolutionLeft
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1094870295
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4348,8 +4409,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 315, y: 126}
-  m_SizeDelta: {x: 160, y: 20}
+  m_AnchoredPosition: {x: 176.9, y: 134}
+  m_SizeDelta: {x: 25, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1122292560
 MonoBehaviour:
@@ -4678,8 +4739,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 60, y: 193}
-  m_SizeDelta: {x: 1500, y: 200}
+  m_AnchoredPosition: {x: 263.9, y: 208.7}
+  m_SizeDelta: {x: 280, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1214577178
 MonoBehaviour:
@@ -4701,9 +4762,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '
-
-    Resolution'
+  m_text: Resolution
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: b47e17bac4f8d44318d3848bf0a1cf88, type: 2}
   m_sharedMaterial: {fileID: -3533278124844337486, guid: b47e17bac4f8d44318d3848bf0a1cf88, type: 2}
@@ -4738,7 +4797,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -4768,7 +4827,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 773.1866, y: 33.911934, z: 299.6241, w: 85.90957}
+  m_margin: {x: 0.45295712, y: -0.011409748, z: -1.2359924, w: 1.6471673}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -9877,8 +9936,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 340.01678, y: 144.4}
-  m_SizeDelta: {x: 311.8579, y: 74.0241}
+  m_AnchoredPosition: {x: 344.7, y: 127.550064}
+  m_SizeDelta: {x: 210.5602, y: 23.165}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1401654435
 MonoBehaviour:
@@ -10167,7 +10226,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1516975818}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1943159253}
+        m_TargetAssemblyTypeName: MainMenuController, Assembly-CSharp
+        m_MethodName: Play
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1516975818
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10605,8 +10676,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 60, y: 193}
-  m_SizeDelta: {x: 1500, y: 200}
+  m_AnchoredPosition: {x: 269, y: 217.7}
+  m_SizeDelta: {x: 288, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1647141520
 MonoBehaviour:
@@ -10628,9 +10699,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '
-
-    Fullscreen'
+  m_text: Fullscreen
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: b47e17bac4f8d44318d3848bf0a1cf88, type: 2}
   m_sharedMaterial: {fileID: -3533278124844337486, guid: b47e17bac4f8d44318d3848bf0a1cf88, type: 2}
@@ -10665,7 +10734,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -10695,7 +10764,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 773.1866, y: 33.911934, z: 299.6241, w: 85.90957}
+  m_margin: {x: -0.21466066, y: 0.773365, z: -1.374054, w: -0.3859748}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -11218,7 +11287,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1845619129}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1943159253}
+        m_TargetAssemblyTypeName: MainMenuController, Assembly-CSharp
+        m_MethodName: Quit
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1845619129
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11661,7 +11742,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1943159252
 RectTransform:
   m_ObjectHideFlags: 0
@@ -11698,6 +11779,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameSceneName: BaseScene
+  menuManager: {fileID: 324771448}
 --- !u!1001 &1963707215
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11904,8 +11986,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 315, y: 126}
-  m_SizeDelta: {x: 160, y: 20}
+  m_AnchoredPosition: {x: 176.9, y: 70.6}
+  m_SizeDelta: {x: 25, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2061153892
 MonoBehaviour:

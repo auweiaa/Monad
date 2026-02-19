@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 public class MainMenuController : MonoBehaviour
 {
     [SerializeField] private string gameSceneName = "BaseScene"; //gameplay scene
+    [SerializeField] private MenuManager menuManager;
 
     void Start()
     {
@@ -18,9 +19,10 @@ public class MainMenuController : MonoBehaviour
         SceneManager.LoadScene(gameSceneName);
     }
 
-    public void Options()
+    public void OpenSettingsMenu()
     {
-        Application.Quit();
+        menuManager.ShowSettingsMenu();
+        Debug.Log("Open Settings Menu");
     }
     
     public void Quit()
