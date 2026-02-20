@@ -4,6 +4,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Audio;
 
 public class SettingsMenuController : MonoBehaviour
 {
@@ -20,10 +21,25 @@ public class SettingsMenuController : MonoBehaviour
     private List<ResolutionItem> resolutions;
     private int selectedResolutionIndex;
 
+    [Header("AudioMixer")]
+    [SerializeField] private AudioMixer mixer;
+
+    [Header("SoundLabels")]
+    [SerializeField] private TMP_Text masterLabel;
+    [SerializeField] private TMP_Text musicLabel;
+    [SerializeField] private TMP_Text sfxLabel;
+
+    [Header("Slider")]
+    [SerializeField] private Slider masterSlider;
+    [SerializeField] private Slider musicSlider;
+    [SerializeField] private Slider sfxSlider;
+
 
     void Start()
     {
         SetToggles();
+
+        SetSoundSlides();
 
         resolutions = BuildResolutionList(); //guarantees a list due to a implemented fallback
 
@@ -149,10 +165,58 @@ public class SettingsMenuController : MonoBehaviour
         Screen.SetResolution(resolutions[selectedResolutionIndex].Horizontal, resolutions[selectedResolutionIndex].Vertical, fullScreenToggle.isOn);
     }
 
+    public void SetMasterVol()
+    {
+        // volume ranges from -80 to 20 db -> +80 to set the text equivalent to mixer
+        masterLabel.text = Mathf.RoundToInt(masterSlider.value + 80).ToString();
+
+        mixer.SetFloat("MasterVol", masterSlider.value);
+
+        PlayerPrefs.SetFloat("MasterVol", masterSlider.value);
+    }
+
+    public void SetMusicVol()
+    {
+        // volume ranges from -80 to 20 db -> +80 to set the text equivalent to mixer
+        musicLabel.text = Mathf.RoundToInt(musicSlider.value + 80).ToString();
+
+        mixer.SetFloat("MusicVol", musicSlider.value);
+
+        PlayerPrefs.SetFloat("MusicVol", musicSlider.value);
+    }
+
+    public void SetSFXVol()
+    {
+        // volume ranges from -80 to 20 db -> +80 to set the text equivalent to mixer
+        sfxLabel.text = Mathf.RoundToInt(sfxSlider.value + 80).ToString();
+
+        mixer.SetFloat("SFXVol", sfxSlider.value);
+
+        PlayerPrefs.SetFloat("SFXVol", sfxSlider.value);
+    }
     public void OpenMainMenu()
     {
         menuManager.ShowMainMenu();
         Debug.Log("Open Main Menu");
+    }
+
+    private void SetSoundSlides()
+    {
+        float masterVolume = 0f;
+        float musicVolume = 0f;
+        float sfxVolume = 0f;
+
+        mixer.GetFloat("MasterVol", out masterVolume);
+        masterSlider.value = masterVolume;
+        masterLabel.text = Mathf.RoundToInt(masterSlider.value + 80).ToString();
+
+        mixer.GetFloat("MusicVol", out musicVolume);
+        musicSlider.value = musicVolume;
+        musicLabel.text = Mathf.RoundToInt(musicSlider.value + 80).ToString();
+
+        mixer.GetFloat("SFXVol", out sfxVolume);
+        sfxSlider.value = sfxVolume;
+        sfxLabel.text = Mathf.RoundToInt(sfxSlider.value + 80).ToString();
     }
 }
 
