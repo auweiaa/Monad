@@ -1,20 +1,26 @@
 using UnityEngine;
+using TMPro;
 
 public class WaveManager : MonoBehaviour
 {
 
     private enum WaveState
     {
-        Waiting, Break
+        Countdown, Waiting, Break
     }
 
+    [Header("UI")]
+    [SerializeField] private TMP_Text countdownText;
+
     [Header("WaveSetting")]
-    [SerializeField] private float breakDuration = 5f;
+    [SerializeField] private float initialCountdown   = 60f;
+    [SerializeField] private float breakDuration      = 5f;
     [SerializeField] private float spawnIntervalInWave = 0.5f;
     [SerializeField] private int enemiesToSpawn = 10;
 
     [Header("EnemySpawner")]
     [SerializeField] private EnemySpawner[] enemySpawners;
+    [SerializeField] private Transform[]    spawnPoints;
     [SerializeField] private int levelForSpawner2 = 15;
     [SerializeField] private int levelForSpawner3 = 30;
 
@@ -22,6 +28,7 @@ public class WaveManager : MonoBehaviour
     private int level;
     private int activeSpawnersCount;
     private float breakTimer;
+    private float countdownTimer;
     private WaveState currentState;
 
 
@@ -43,7 +50,8 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
-        currentState = WaveState.Break;
+        currentState = WaveState.Countdown;
+        countdownTimer = initialCountdown;
         breakTimer = breakDuration;
         level = 0;
         activeSpawnersCount = 1;
@@ -58,6 +66,24 @@ public class WaveManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (currentState == WaveState.Countdown)
+        {
+            countdownTimer -= Time.deltaTime;
+
+            if (countdownText != null)
+            {
+                int secs = Mathf.CeilToInt(Mathf.Max(0f, countdownTimer));
+                countdownText.text = $"First wave in {secs}s";
+            }
+
+            if (countdownTimer <= 0f)
+            {
+                if (countdownText != null) countdownText.gameObject.SetActive(false);
+                currentState = WaveState.Break;
+                breakTimer   = 0f;
+            }
+        }
+
         if (currentState == WaveState.Break)
         {
             breakTimer -= Time.deltaTime;
@@ -108,6 +134,10 @@ public class WaveManager : MonoBehaviour
 
         for (int i = 0; i < activeSpawnersCount; i++)
         {
+            // Apply spawn point from WaveManager if one is assigned for this spawner.
+            if (spawnPoints != null && i < spawnPoints.Length && spawnPoints[i] != null)
+                enemySpawners[i].SetSpawnPoint(spawnPoints[i].position);
+
             Debug.Log($"[WaveManager] Spawner {i}: {enemySpawners[i].name} begins wave");
             enemySpawners[i].BeginWave(level, enemiesToSpawn, spawnIntervalInWave);
         }

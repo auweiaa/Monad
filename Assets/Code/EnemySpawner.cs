@@ -18,6 +18,9 @@ public class EnemySpawner : MonoBehaviour
     [Header("Spawn Area")]
     [SerializeField] private float spawnRadius = 15f;
     [SerializeField] private float minSpawnDistance = 10f;
+
+    // Set by WaveManager before each wave.
+    private Vector2 spawnCenter;
     
     [Header("Enemy Stats")]
     [SerializeField, Min(0.1f)] private float enemySpeed = 1f;
@@ -75,7 +78,8 @@ public class EnemySpawner : MonoBehaviour
 
     private void Start()
     {
-
+        // Default spawn center to this object's position if WaveManager hasn't set one yet.
+        spawnCenter = transform.position;
     }
 
     private void OnDestroy()
@@ -120,7 +124,7 @@ public class EnemySpawner : MonoBehaviour
     {
         // Get the prefab's position as the center for spawning
   /*      Vector2 prefabCenter = enemyPrefab != null ? (Vector2)enemyPrefab.transform.position : Vector2.zero;*/
-        Vector2 prefabCenter = enemyPrefab != null ? (Vector2)transform.position : Vector2.zero;
+        Vector2 prefabCenter = spawnCenter;
         
         // Spawn enemies in a ring around the prefab location (between minSpawnDistance and spawnRadius)
         float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
@@ -128,6 +132,12 @@ public class EnemySpawner : MonoBehaviour
         
         Vector2 offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * distance;
         return prefabCenter + offset;
+    }
+
+    /// <summary>Called by WaveManager to position where this spawner spawns enemies from.</summary>
+    public void SetSpawnPoint(Vector2 position)
+    {
+        spawnCenter = position;
     }
 
     public void OnEnemyDestroyed()
@@ -157,7 +167,7 @@ public class EnemySpawner : MonoBehaviour
     {
         // Get the prefab's position as the center for visualization
        /* Vector3 prefabCenter = enemyPrefab != null ? enemyPrefab.transform.position : Vector3.zero;*/
-        Vector3 prefabCenter = enemyPrefab != null ? transform.position : Vector3.zero;
+        Vector3 prefabCenter = spawnCenter;
         
         // Target position
         Vector3 targetCenter = new Vector3(targetPosition.x, targetPosition.y, 0f);

@@ -29,6 +29,7 @@ public class EnemyMovement : MonoBehaviour
     private Animator         animator;
     private Enemy            enemy;
     private PlacementManager placementManager;
+    private GridManager      gridManager;
     private Grid             grid;
     private Transform        coreTransform;
     private Core             coreComponent;
@@ -76,6 +77,7 @@ public class EnemyMovement : MonoBehaviour
                 paramHashes.Add(p.nameHash);
 
         placementManager = FindFirstObjectByType<PlacementManager>();
+        gridManager      = FindFirstObjectByType<GridManager>();
         grid             = FindFirstObjectByType<Grid>();
 
         GameObject coreObj = GameObject.FindGameObjectWithTag(coreTag);
@@ -92,6 +94,10 @@ public class EnemyMovement : MonoBehaviour
         if (placementManager != null)
             placementManager.OnGridChanged += RecalculatePath;
 
+        // Recalculate whenever a resource/environment object appears or is depleted.
+        if (gridManager != null)
+            gridManager.GridChanged += RecalculatePath;
+
         // Initial path on spawn.
         RecalculatePath();
     }
@@ -100,6 +106,9 @@ public class EnemyMovement : MonoBehaviour
     {
         if (placementManager != null)
             placementManager.OnGridChanged -= RecalculatePath;
+
+        if (gridManager != null)
+            gridManager.GridChanged -= RecalculatePath;
     }
 
     private void Update()
@@ -230,7 +239,13 @@ public class EnemyMovement : MonoBehaviour
     }
 
     private bool IsBlocked(Vector3Int cell)
-        => placementManager != null && placementManager.IsCellOccupied(cell);
+    {
+        // No ground tile, or a tower is placed here.
+        if (placementManager != null && !placementManager.IsCellWalkable(cell)) return true;
+        // A resource/environment object occupies this cell.
+        if (gridManager != null && gridManager.IsOccupied(cell)) return true;
+        return false;
+    }
 
     private static float Heuristic(Vector3Int a, Vector3Int b)
         => Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
