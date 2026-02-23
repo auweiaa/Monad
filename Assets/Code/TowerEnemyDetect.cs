@@ -21,6 +21,10 @@ public class TowerEnemyDetect : MonoBehaviour
     [SerializeField] private TargetMode targetMode = TargetMode.Closest;
     [SerializeField] private string enemyTag = "Enemy";
 
+    [Header("Detection Collider (Manual)")]
+    [Tooltip("Assign a trigger collider manually (for example PolygonCollider2D). This script will not auto-create one.")]
+    [SerializeField] private Collider2D detectionCollider;
+
     [Header("Projectile Spawn")]
     [Tooltip("Optional muzzle/spawn transform. If null, uses this transform.")]
     [SerializeField] private Transform muzzle;
@@ -31,51 +35,52 @@ public class TowerEnemyDetect : MonoBehaviour
     [SerializeField] private TowerData fallbackTowerData;
 
     private readonly List<Transform> inRangeOrdered = new List<Transform>(16);
-
-    private CircleCollider2D circle;
-    private Rigidbody2D rb;
+    private readonly Collider2D[] overlapBuffer = new Collider2D[128];
+    private readonly ContactFilter2D overlapFilter = new ContactFilter2D
+    {
+        useTriggers = true,
+        useLayerMask = false,
+        useDepth = false,
+        useNormalAngle = false
+    };
 
     private TowerData towerData;
     private float cooldown;
-    private float lastRangeApplied = -1f;
 
     private void Awake()
     {
-        EnsurePhysics();
+        EnsureDetectionCollider();
         TryResolveTowerData();
-        ApplyRangeIfNeeded();
     }
 
     private void OnEnable()
     {
-        EnsurePhysics();
+        EnsureDetectionCollider();
         TryResolveTowerData();
-        ApplyRangeIfNeeded();
     }
 
     public void SetTowerData(TowerData data)
     {
         towerData = data;
-        ApplyRangeIfNeeded(force: true);
     }
 
-    private void EnsurePhysics()
+    private void EnsureDetectionCollider()
     {
-        circle = GetComponent<CircleCollider2D>();
-        if (circle == null)
+        if (detectionCollider == null)
         {
-            circle = gameObject.AddComponent<CircleCollider2D>();
+            detectionCollider = GetComponent<Collider2D>();
         }
-        circle.isTrigger = true;
+        if (detectionCollider == null)
+        {
+            Debug.LogWarning($"{nameof(TowerEnemyDetect)} on {name}: No detection collider assigned. Assign a trigger collider in the Inspector.", this);
+            return;
+        }
 
-        rb = GetComponent<Rigidbody2D>();
-        if (rb == null)
+        if (!detectionCollider.isTrigger)
         {
-            rb = gameObject.AddComponent<Rigidbody2D>();
+            Debug.LogWarning($"{nameof(TowerEnemyDetect)} on {name}: Detection collider should have Is Trigger enabled. Enforcing at runtime.", this);
+            detectionCollider.isTrigger = true;
         }
-        rb.bodyType = RigidbodyType2D.Kinematic;
-        rb.simulated = true;
-        rb.gravityScale = 0f;
     }
 
     private void Update()
@@ -84,14 +89,12 @@ public class TowerEnemyDetect : MonoBehaviour
         {
             TryResolveTowerData();
         }
+
+        RefreshInRangeFromDetectionCollider();
         if (towerData == null)
         {
             return;
         }
-
-        ApplyRangeIfNeeded();
-        PruneDestroyed();
-
         float attackSpeed = towerData.AttackSpeed;
         if (attackSpeed <= 0f)
         {
@@ -129,69 +132,46 @@ public class TowerEnemyDetect : MonoBehaviour
         }
     }
 
-    private void ApplyRangeIfNeeded(bool force = false)
-    {
-        if (towerData == null || circle == null)
-        {
-            return;
-        }
-
-        float range = Mathf.Max(0f, towerData.Range);
-        if (!force && Mathf.Approximately(lastRangeApplied, range))
-        {
-            return;
-        }
-
-        circle.radius = range;
-        circle.isTrigger = true;
-        lastRangeApplied = range;
-    }
-
     private void OnDisable()
     {
         inRangeOrdered.Clear();
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
+    private void RefreshInRangeFromDetectionCollider()
     {
-        if (other == null || !other.CompareTag(enemyTag))
+        if (detectionCollider == null || !detectionCollider.enabled)
         {
+            inRangeOrdered.Clear();
             return;
         }
 
-        Transform t = other.transform;
-        if (t == null)
+        int count = detectionCollider.Overlap(overlapFilter, overlapBuffer);
+        var currentlyInside = new HashSet<Transform>();
+
+        for (int i = 0; i < count; i++)
         {
-            return;
+            Collider2D hit = overlapBuffer[i];
+            if (hit == null || !hit.CompareTag(enemyTag))
+            {
+                continue;
+            }
+
+            Transform t = hit.attachedRigidbody != null ? hit.attachedRigidbody.transform : hit.transform;
+            if (t == null || !currentlyInside.Add(t))
+            {
+                continue;
+            }
+
+            if (!inRangeOrdered.Contains(t))
+            {
+                inRangeOrdered.Add(t);
+            }
         }
 
-        if (!inRangeOrdered.Contains(t))
-        {
-            inRangeOrdered.Add(t);
-        }
-    }
-
-    private void OnTriggerExit2D(Collider2D other)
-    {
-        if (other == null || !other.CompareTag(enemyTag))
-        {
-            return;
-        }
-
-        Transform t = other.transform;
-        if (t == null)
-        {
-            return;
-        }
-
-        inRangeOrdered.Remove(t);
-    }
-
-    private void PruneDestroyed()
-    {
         for (int i = inRangeOrdered.Count - 1; i >= 0; i--)
         {
-            if (inRangeOrdered[i] == null)
+            Transform t = inRangeOrdered[i];
+            if (t == null || !currentlyInside.Contains(t))
             {
                 inRangeOrdered.RemoveAt(i);
             }

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8548e10e022a9af48b65d229d5859b54, type: 3}
+  m_Name: BlastTower
+  m_EditorClassIdentifier: 
+  towerName: BlastTower
+  towerPrefab: {fileID: 3010845532143204905, guid: 5acd6e286aea2422d95fd5f2a8d135d8, type: 3}
+  range: 3
+  health: 1
+  damage: 0
+  attackSpeed: 1
+  footprint: {x: 1, y: 1}
+  projectilePrefab: {fileID: 7805623665364096366, guid: 5fc15f478f80242d68fcde968f3838a3, type: 3}
+  cost:
+    wood: 0
+    stone: 0
+    iron: 0
+    gold: 0
