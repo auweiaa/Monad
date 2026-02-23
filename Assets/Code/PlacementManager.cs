@@ -352,6 +352,16 @@ public class PlacementManager : MonoBehaviour
         return !occupiedCells.Contains(cell);
     }
 
+    /// <summary>Marks footprint cells as occupied (e.g. for pre-placed towers in the scene). Fires OnGridChanged.</summary>
+    public void OccupyCells(Vector3Int originCell, Vector2Int footprint)
+    {
+        if (footprint.x < 1 || footprint.y < 1) return;
+        for (int x = 0; x < footprint.x; x++)
+        for (int y = 0; y < footprint.y; y++)
+            occupiedCells.Add(originCell + new Vector3Int(x, y, 0));
+        OnGridChanged?.Invoke();
+    }
+
     /// <summary>
     /// Called by a PlacedTower when it is destroyed. Frees its cells and
     /// fires OnGridChanged so enemies can recalculate their paths.

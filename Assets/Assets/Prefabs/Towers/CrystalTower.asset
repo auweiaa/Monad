@@ -16,7 +16,7 @@ MonoBehaviour:
   towerPrefab: {fileID: 4166282027712200728, guid: b28356aa3160b1c41b070bca197421ac, type: 3}
   range: 5
   health: 10
-  damage: 5
+  damage: 10
   attackSpeed: 1
   footprint: {x: 3, y: 3}
   projectilePrefab: {fileID: 6427851651625820337, guid: ed19d093d52d1475cb0a1a7378c77ac3, type: 3}

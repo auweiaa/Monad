@@ -1,31 +1,59 @@
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 [DisallowMultipleComponent]
 public class AreaBlaster : MonoBehaviour, ITowerProjectile
 {
-    [Header("Hit Filtering")]
+    [Header("Detection (same as tower)")]
+    [Tooltip("Trigger collider that defines the blast area (e.g. PolygonCollider2D). Enemies overlapping this are damaged.")]
+    [SerializeField] private Collider2D detectionCollider;
     [SerializeField] private string enemyTag = "Enemy";
+
+    [Header("Blast Fallbacks")]
+    [Tooltip("Used when TowerData is null or has zero damage so the blast still damages.")]
+    [SerializeField, Min(0)] private int fallbackDamage = 10;
 
     [Header("Active Lifetime")]
     [SerializeField, Min(0f)] private float activeDurationSeconds = 0.6f;
-
-    [Header("Isometric Range Projection")]
-    [SerializeField] private bool useIsometricProjection = true;
-    [SerializeField, Min(0.01f)] private float isometricYScale = 0.5f;
-    [SerializeField] private float isometricShear = 0f;
 
     [Header("Effects")]
     [SerializeField] private ParticleSystem explosion;
     [SerializeField] private GameObject sprite;
 
+    private static readonly ContactFilter2D OverlapFilter = new ContactFilter2D
+    {
+        useTriggers = true,
+        useLayerMask = false,
+        useDepth = false,
+        useNormalAngle = false
+    };
+
+    private readonly Collider2D[] overlapBuffer = new Collider2D[64];
+    private readonly HashSet<Transform> alreadyHitThisTick = new HashSet<Transform>();
     private bool hasActivated;
+    /// <summary>When set (from owner tower), we use this for overlap so we damage the same area the tower detects.</summary>
+    private Collider2D effectiveCollider;
 
     private void Awake()
     {
+        EnsureDetectionCollider();
         if (explosion != null)
         {
             explosion.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             explosion.Clear(true);
+        }
+    }
+
+    private void EnsureDetectionCollider()
+    {
+        if (detectionCollider == null)
+        {
+            detectionCollider = GetComponent<Collider2D>();
+        }
+        if (detectionCollider != null && !detectionCollider.isTrigger)
+        {
+            detectionCollider.isTrigger = true;
         }
     }
 
@@ -37,15 +65,11 @@ public class AreaBlaster : MonoBehaviour, ITowerProjectile
         }
         hasActivated = true;
 
-        int damage = towerData != null ? towerData.Damage : 0;
-        float radius = towerData != null ? Mathf.Max(0f, towerData.Range) : 0f;
-        Vector2 center = owner != null ? (Vector2)owner.position : (Vector2)transform.position;
-        transform.position = new Vector3(center.x, center.y, transform.position.z);
-
-        if (radius > 0f && damage > 0)
-        {
-            DamageEnemiesInRadius(center, radius, damage);
-        }
+        int damage = (towerData != null && towerData.Damage > 0) ? towerData.Damage : fallbackDamage;
+        float attackSpeed = (towerData != null && towerData.AttackSpeed > 0f) ? towerData.AttackSpeed : 1f;
+        Vector3 pos = owner != null ? owner.position : transform.position;
+        pos.z = transform.position.z;
+        transform.position = pos;
 
         if (sprite != null)
         {
@@ -57,53 +81,72 @@ public class AreaBlaster : MonoBehaviour, ITowerProjectile
             explosion.Play(true);
         }
 
+        // Use tower's detection collider so we damage everyone in the same area the tower uses (blast prefab collider may not overlap)
+        if (owner != null)
+        {
+            var towerDetect = owner.GetComponent<TowerEnemyDetect>();
+            if (towerDetect != null && towerDetect.DetectionCollider != null)
+                effectiveCollider = towerDetect.DetectionCollider;
+        }
+        if (effectiveCollider == null)
+            effectiveCollider = detectionCollider;
+
+        if (damage > 0)
+        {
+            StartCoroutine(DamageAllInAreaRoutine(damage, attackSpeed));
+        }
+
         Destroy(gameObject, Mathf.Max(0f, activeDurationSeconds));
     }
 
-    private void DamageEnemiesInRadius(Vector2 center, float radius, int damage)
+    /// <summary>
+    /// Every 1/attackSpeed seconds, damage all enemies overlapping the detection collider (same system as TowerEnemyDetect).
+    /// </summary>
+    private IEnumerator DamageAllInAreaRoutine(int damage, float attackSpeed)
     {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(center, radius);
-        if (hits == null || hits.Length == 0)
+        float interval = 1f / Mathf.Max(0.001f, attackSpeed);
+        float endTime = Time.time + activeDurationSeconds;
+        float nextTick = Time.time;
+
+        while (Time.time < endTime)
         {
-            return;
-        }
-
-        var alreadyHit = new System.Collections.Generic.HashSet<Transform>();
-        for (int i = 0; i < hits.Length; i++)
-        {
-            Collider2D hit = hits[i];
-            if (hit == null || !hit.CompareTag(enemyTag))
+            if (Time.time >= nextTick)
             {
-                continue;
+                DamageEnemiesInDetectionArea(damage);
+                nextTick += interval;
             }
-
-            Transform victim = hit.attachedRigidbody != null ? hit.attachedRigidbody.transform : hit.transform;
-            if (victim == null || alreadyHit.Contains(victim))
-            {
-                continue;
-            }
-
-            if (!IsWithinAoERadius(center, victim.position, radius))
-            {
-                continue;
-            }
-
-            alreadyHit.Add(victim);
-            victim.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
+            yield return null;
         }
     }
 
-    private bool IsWithinAoERadius(Vector2 center, Vector3 worldPoint, float radius)
+    /// <summary>
+    /// Uses the trigger collider overlap (same as TowerEnemyDetect) to find enemies and apply damage.
+    /// </summary>
+    private void DamageEnemiesInDetectionArea(int damage)
     {
-        Vector2 local = (Vector2)worldPoint - center;
-        if (!useIsometricProjection)
-        {
-            return local.sqrMagnitude <= radius * radius;
-        }
+        Collider2D col = effectiveCollider != null ? effectiveCollider : detectionCollider;
+        if (col == null || !col.enabled)
+            return;
 
-        float isoX = local.x + (local.y * isometricShear);
-        float isoY = local.y * isometricYScale;
-        float projectedSqr = (isoX * isoX) + (isoY * isoY);
-        return projectedSqr <= radius * radius;
+        int count = col.Overlap(OverlapFilter, overlapBuffer);
+        alreadyHitThisTick.Clear();
+
+        for (int i = 0; i < count; i++)
+        {
+            Collider2D hit = overlapBuffer[i];
+            if (hit == null || !hit.transform.root.CompareTag(enemyTag))
+                continue;
+
+            Transform root = hit.transform.root;
+            if (root == null || alreadyHitThisTick.Contains(root))
+                continue;
+
+            alreadyHitThisTick.Add(root);
+            var enemy = root.GetComponentInParent<Enemy>();
+            if (enemy == null)
+                enemy = hit.GetComponentInParent<Enemy>();
+            if (enemy != null)
+                enemy.TakeDamage((float)damage);
+        }
     }
 }

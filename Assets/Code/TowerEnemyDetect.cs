@@ -25,6 +25,9 @@ public class TowerEnemyDetect : MonoBehaviour
     [Tooltip("Assign a trigger collider manually (for example PolygonCollider2D). This script will not auto-create one.")]
     [SerializeField] private Collider2D detectionCollider;
 
+    /// <summary>Collider used to detect enemies in range. Area projectiles (e.g. AreaBlaster) can use this to damage the same area.</summary>
+    public Collider2D DetectionCollider => detectionCollider;
+
     [Header("Projectile Spawn")]
     [Tooltip("Optional muzzle/spawn transform. If null, uses this transform.")]
     [SerializeField] private Transform muzzle;
@@ -35,7 +38,9 @@ public class TowerEnemyDetect : MonoBehaviour
     [SerializeField] private TowerData fallbackTowerData;
 
     private readonly List<Transform> inRangeOrdered = new List<Transform>(16);
+    private readonly HashSet<Transform> inRangeSet = new HashSet<Transform>();
     private readonly Collider2D[] overlapBuffer = new Collider2D[128];
+    private readonly HashSet<Transform> currentlyInside = new HashSet<Transform>();
     private readonly ContactFilter2D overlapFilter = new ContactFilter2D
     {
         useTriggers = true,
@@ -135,6 +140,7 @@ public class TowerEnemyDetect : MonoBehaviour
     private void OnDisable()
     {
         inRangeOrdered.Clear();
+        inRangeSet.Clear();
     }
 
     private void RefreshInRangeFromDetectionCollider()
@@ -142,11 +148,12 @@ public class TowerEnemyDetect : MonoBehaviour
         if (detectionCollider == null || !detectionCollider.enabled)
         {
             inRangeOrdered.Clear();
+            inRangeSet.Clear();
             return;
         }
 
         int count = detectionCollider.Overlap(overlapFilter, overlapBuffer);
-        var currentlyInside = new HashSet<Transform>();
+        currentlyInside.Clear();
 
         for (int i = 0; i < count; i++)
         {
@@ -162,8 +169,9 @@ public class TowerEnemyDetect : MonoBehaviour
                 continue;
             }
 
-            if (!inRangeOrdered.Contains(t))
+            if (!inRangeSet.Contains(t))
             {
+                inRangeSet.Add(t);
                 inRangeOrdered.Add(t);
             }
         }
@@ -173,6 +181,7 @@ public class TowerEnemyDetect : MonoBehaviour
             Transform t = inRangeOrdered[i];
             if (t == null || !currentlyInside.Contains(t))
             {
+                inRangeSet.Remove(t);
                 inRangeOrdered.RemoveAt(i);
             }
         }

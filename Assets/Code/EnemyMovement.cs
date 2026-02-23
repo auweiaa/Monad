@@ -9,6 +9,10 @@ public class EnemyMovement : MonoBehaviour
     [SerializeField] private string coreTag = "Core";
     [SerializeField] private float  waypointReachRadius = 0.25f;
     [SerializeField] private int    maxAStarIterations  = 2000;
+    
+    [Header("Repath Scheduling")]
+    [Tooltip("How many enemies may recalculate their path per frame after a grid change.")]
+    [SerializeField, Min(1)] private int repathsPerFrame = 2;
 
     [Header("Attack")]
     [SerializeField] private float attackRange    = 1.5f;
@@ -38,6 +42,11 @@ public class EnemyMovement : MonoBehaviour
     private List<Vector3> waypoints    = new List<Vector3>();
     private int           waypointIndex = 0;
     private bool          hasPath       = false;
+    private bool          pathDirty     = false;
+    private bool          queuedForRepath = false;
+
+    private static readonly Queue<EnemyMovement> repathQueue = new Queue<EnemyMovement>();
+    private static int repathProcessedFrame = -1;
 
     // Attack state
     private float attackTimer = 0f;
@@ -55,7 +64,8 @@ public class EnemyMovement : MonoBehaviour
     {
         rb2D     = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
-        enemy    = GetComponent<Enemy>();
+        // Resolve Enemy on this object or parent so spawner speed applies when Enemy is on root (e.g. EnemyPawn > Knight hierarchy).
+        enemy    = GetComponentInParent<Enemy>();
 
         if (rb2D != null)
         {
@@ -92,11 +102,11 @@ public class EnemyMovement : MonoBehaviour
     {
         // Recalculate whenever a tower is placed or destroyed.
         if (placementManager != null)
-            placementManager.OnGridChanged += RecalculatePath;
+            placementManager.OnGridChanged += RequestRepath;
 
         // Recalculate whenever a resource/environment object appears or is depleted.
         if (gridManager != null)
-            gridManager.GridChanged += RecalculatePath;
+            gridManager.GridChanged += RequestRepath;
 
         // Initial path on spawn.
         RecalculatePath();
@@ -105,14 +115,16 @@ public class EnemyMovement : MonoBehaviour
     private void OnDestroy()
     {
         if (placementManager != null)
-            placementManager.OnGridChanged -= RecalculatePath;
+            placementManager.OnGridChanged -= RequestRepath;
 
         if (gridManager != null)
-            gridManager.GridChanged -= RecalculatePath;
+            gridManager.GridChanged -= RequestRepath;
     }
 
     private void Update()
     {
+        ProcessRepathQueueOncePerFrame();
+
         if (coreTransform == null) return;
 
         float distToCore = Vector2.Distance(transform.position, coreTransform.position);
@@ -141,30 +153,62 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
-        // Follow the path.
-        Vector2 target = waypoints[waypointIndex];
-        Vector2 dir    = target - (Vector2)transform.position;
+        if (enemy == null) enemy = GetComponentInParent<Enemy>();
+        float speed = enemy != null ? enemy.MoveSpeed : 10f;
+        float step  = Mathf.Max(0f, speed * Time.deltaTime);
 
-        if (dir.magnitude <= waypointReachRadius)
+        Vector2 startPos = rb2D != null ? rb2D.position : (Vector2)transform.position;
+        Vector2 pos = startPos;
+        Vector2 lastDelta = Vector2.zero;
+
+        // Move with step clamping so we never overshoot a waypoint even on large deltaTime.
+        int safety = 0;
+        while (step > 0f && hasPath && waypointIndex < waypoints.Count && safety++ < 64)
         {
-            waypointIndex++;
-            if (waypointIndex >= waypoints.Count)
+            Vector2 target = waypoints[waypointIndex];
+            Vector2 to = target - pos;
+            float dist = to.magnitude;
+
+            // Skip already-reached waypoints (including when snapping).
+            if (dist <= Mathf.Max(0.0001f, waypointReachRadius))
             {
-                hasPath = false;
-                UpdateAnimator(Vector2.zero);
-                return;
+                waypointIndex++;
+                if (waypointIndex >= waypoints.Count)
+                {
+                    hasPath = false;
+                }
+                continue;
             }
-            dir = (Vector2)waypoints[waypointIndex] - (Vector2)transform.position;
+
+            if (dist <= step)
+            {
+                // Consume the whole segment and continue to the next waypoint in the same frame.
+                pos = target;
+                lastDelta = to;
+                step -= dist;
+
+                waypointIndex++;
+                if (waypointIndex >= waypoints.Count)
+                {
+                    hasPath = false;
+                }
+            }
+            else
+            {
+                // Partial move toward the current waypoint.
+                Vector2 delta = to * (step / dist);
+                pos += delta;
+                lastDelta = delta;
+                step = 0f;
+            }
         }
 
-        Vector2 moveDir = dir.normalized;
-        float   speed   = enemy != null ? enemy.MoveSpeed : 10f;
-
         if (rb2D != null)
-            rb2D.MovePosition(rb2D.position + moveDir * speed * Time.deltaTime);
+            rb2D.MovePosition(pos);
         else
-            transform.position += (Vector3)(moveDir * speed * Time.deltaTime);
+            transform.position = pos;
 
+        Vector2 moveDir = lastDelta.sqrMagnitude > 0.000001f ? lastDelta.normalized : Vector2.zero;
         UpdateAnimator(moveDir);
     }
 
@@ -189,7 +233,47 @@ public class EnemyMovement : MonoBehaviour
         foreach (Vector3Int cell in cellPath)
             waypoints.Add(grid.GetCellCenterWorld(cell));
 
+        // Skip waypoints that we are already within reach of.
+        while (waypointIndex < waypoints.Count &&
+               Vector2.Distance(transform.position, waypoints[waypointIndex]) <= waypointReachRadius)
+        {
+            waypointIndex++;
+        }
+
+        if (waypointIndex >= waypoints.Count) return;
         hasPath = true;
+    }
+
+    private void RequestRepath()
+    {
+        pathDirty = true;
+        hasPath = false; // pause until a fresh path is ready
+
+        if (!queuedForRepath)
+        {
+            queuedForRepath = true;
+            repathQueue.Enqueue(this);
+        }
+    }
+
+    private void ProcessRepathQueueOncePerFrame()
+    {
+        if (Time.frameCount == repathProcessedFrame) return;
+        repathProcessedFrame = Time.frameCount;
+
+        int budget = Mathf.Max(1, repathsPerFrame);
+        for (int i = 0; i < budget; i++)
+        {
+            if (repathQueue.Count == 0) break;
+            EnemyMovement e = repathQueue.Dequeue();
+            if (e == null) continue;
+
+            e.queuedForRepath = false;
+            if (!e.pathDirty) continue;
+
+            e.pathDirty = false;
+            e.RecalculatePath();
+        }
     }
 
     // -----------------------------------------------------------------------

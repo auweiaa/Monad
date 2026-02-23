@@ -76,12 +76,12 @@ public class Enemy : MonoBehaviour
 
     /// <summary>
     /// Called by EnemySpawner right after spawning to wire up the back-reference.
-    /// <paramref name="speed"/> overrides the serialised MoveSpeed if > 0.
+    /// <paramref name="speed"/> overrides the prefab MoveSpeed so spawner inspector value is used.
     /// </summary>
     public void Initialize(Vector2 target, float speed, EnemySpawner parentSpawner)
     {
         spawner = parentSpawner;
-        if (speed > 0f) moveSpeed = speed;
+        moveSpeed = Mathf.Max(0f, speed);
         // target is now handled by EnemyMovement (it finds Core by tag automatically)
     }
 

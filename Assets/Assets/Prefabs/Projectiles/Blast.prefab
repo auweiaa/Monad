@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 827979238260707365}
   - component: {fileID: 317911628328447694}
+  - component: {fileID: 4777097747088308952}
   m_Layer: 0
   m_Name: Code_Generated_Image
   m_TagString: Untagged
@@ -87,6 +88,92 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 1
+--- !u!60 &4777097747088308952
+PolygonCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2599986297720313673}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0}
+    oldSize: {x: 5.4266667, y: 5.4}
+    newSize: {x: 4.07, y: 4.05}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Points:
+    m_Paths:
+    - - {x: 1.3533334, y: 1.7466667}
+      - {x: 1.6466668, y: 1.9200001}
+      - {x: 1.7933334, y: 2.0533333}
+      - {x: 1.9133334, y: 2.1866667}
+      - {x: 2.0333333, y: 2.3733335}
+      - {x: 2.1000001, y: 2.5333333}
+      - {x: 2.1000001, y: 2.7733333}
+      - {x: 2.0866668, y: 2.8533335}
+      - {x: 2.0466666, y: 3.0266666}
+      - {x: 1.8333334, y: 3.3200002}
+      - {x: 1.7, y: 3.4266667}
+      - {x: 1.5266668, y: 3.5466669}
+      - {x: 1.1266667, y: 3.7466667}
+      - {x: 0.82, y: 3.8400002}
+      - {x: 0.54, y: 3.88}
+      - {x: 0.31333333, y: 3.9066668}
+      - {x: -0.31333333, y: 3.9066668}
+      - {x: -0.5266667, y: 3.88}
+      - {x: -0.68666667, y: 3.8533335}
+      - {x: -1.0066667, y: 3.7733333}
+      - {x: -1.1800001, y: 3.7066667}
+      - {x: -1.4733334, y: 3.5733335}
+      - {x: -1.62, y: 3.48}
+      - {x: -1.9133334, y: 3.2266667}
+      - {x: -2.0466666, y: 3.0133333}
+      - {x: -2.0866668, y: 2.88}
+      - {x: -2.0866668, y: 2.56}
+      - {x: -2.0333333, y: 2.3866668}
+      - {x: -1.9000001, y: 2.1733334}
+      - {x: -1.74, y: 2.0133333}
+      - {x: -1.4733334, y: 1.8133334}
+      - {x: -1.1133333, y: 1.6666667}
+      - {x: -0.68666667, y: 1.5466667}
+      - {x: -0.5266667, y: 1.52}
+      - {x: -0.31333333, y: 1.4933333}
+      - {x: 0.31333333, y: 1.4933333}
+      - {x: 0.54, y: 1.52}
+      - {x: 0.68666667, y: 1.5466667}
+      - {x: 0.9666667, y: 1.6}
+  m_UseDelaunayMesh: 0
 --- !u!1 &5383902123046290281
 GameObject:
   m_ObjectHideFlags: 0
@@ -4967,10 +5054,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb17033294ca4447db16d46de80cd27f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  detectionCollider: {fileID: 4777097747088308952}
   enemyTag: Enemy
+  fallbackDamage: 10
   activeDurationSeconds: 0.6
-  useIsometricProjection: 1
-  isometricYScale: 0.5
-  isometricShear: 0
   explosion: {fileID: 5202194775315606997}
   sprite: {fileID: 2599986297720313673}

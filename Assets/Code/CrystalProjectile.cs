@@ -18,15 +18,20 @@ public class CrystalProjectile : MonoBehaviour, ITowerProjectile
     [SerializeField] private string enemyTag = "Enemy";
 
     [Header("Lifetime")]
-    [SerializeField, Min(0f)] private float maxLifetimeSeconds = 5f;
+    [SerializeField, Min(0f)] private float maxLifetimeSeconds = 2.5f;
 
     [Header("Effects")]
     [SerializeField] private ParticleSystem explosion;
     [SerializeField] private GameObject sprite;
 
+    [Header("Hit")]
+    [Tooltip("Delay before destroying after hitting an enemy (lets hit VFX play, spreads GC).")]
+    [SerializeField, Min(0f)] private float destroyDelayOnHit = 0.5f;
+
     private Transform target;
     private int damage;
     private float age;
+    private bool isHit;
 
     private Rigidbody2D rb;
     private Collider2D col;
@@ -34,9 +39,11 @@ public class CrystalProjectile : MonoBehaviour, ITowerProjectile
 
     private void Awake()
     {
-
-        explosion.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-        explosion.Clear(true);
+        if (explosion != null)
+        {
+            explosion.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            explosion.Clear(true);
+        }
         // Ensure we can use trigger callbacks + kinematic motion.
         rb = GetComponent<Rigidbody2D>();
         if (rb == null)
@@ -73,6 +80,11 @@ public class CrystalProjectile : MonoBehaviour, ITowerProjectile
 
     private void FixedUpdate()
     {
+        if (isHit)
+        {
+            return;
+        }
+
         age += Time.fixedDeltaTime;
         if (maxLifetimeSeconds > 0f && age >= maxLifetimeSeconds)
         {
@@ -109,20 +121,40 @@ public class CrystalProjectile : MonoBehaviour, ITowerProjectile
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other == null)
+        if (other == null || isHit)
         {
             return;
         }
 
-        if (!other.CompareTag(enemyTag))
+        // Tag is on root; collider may be on a child
+        if (!other.transform.root.CompareTag(enemyTag))
         {
             return;
         }
 
-        other.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
-        sprite.SetActive(false);
-        explosion.Clear(true);
-        explosion.Play(true);
-        Destroy(gameObject,1);
+        isHit = true;
+
+        // Enemy may be on root/parent if collider is on a child
+        var enemy = other.GetComponentInParent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.TakeDamage((float)damage);
+        }
+
+        if (col != null)
+        {
+            col.enabled = false;
+        }
+        if (sprite != null)
+        {
+            sprite.SetActive(false);
+        }
+        if (explosion != null)
+        {
+            explosion.Clear(true);
+            explosion.Play(true);
+        }
+
+        Destroy(gameObject, destroyDelayOnHit);
     }
 }

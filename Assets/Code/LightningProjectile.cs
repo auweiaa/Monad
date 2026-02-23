@@ -146,26 +146,31 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
             return;
         }
 
-        if (!other.CompareTag(enemyTag))
+        // Tag is on root; collider may be on a child
+        if (!other.transform.root.CompareTag(enemyTag))
         {
             return;
         }
 
-        Transform victim = other.attachedRigidbody != null ? other.attachedRigidbody.transform : other.transform;
-        if (victim == null)
+        Transform root = other.transform.root;
+        if (root == null)
         {
             return;
         }
 
-        if (hitEnemies.Contains(victim))
+        if (hitEnemies.Contains(root))
         {
             return;
         }
 
         // Record hit + deal damage once.
-        hitEnemies.Add(victim);
+        hitEnemies.Add(root);
         hitCount++;
-        victim.gameObject.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
+        var enemy = root.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.TakeDamage((float)damage);
+        }
 
         // Prevent immediate re-triggering on the same collider as we bounce away.
         if (col != null)
@@ -230,22 +235,23 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
                 continue;
             }
 
-            if (!c.CompareTag(enemyTag))
+            // Tag is on root; collider may be on a child
+            if (!c.transform.root.CompareTag(enemyTag))
             {
                 continue;
             }
 
-            Transform t = c.attachedRigidbody != null ? c.attachedRigidbody.transform : c.transform;
-            if (t == null || hitEnemies.Contains(t))
+            Transform root = c.transform.root;
+            if (root == null || hitEnemies.Contains(root))
             {
                 continue;
             }
 
-            float sqr = ((Vector2)t.position - center).sqrMagnitude;
+            float sqr = ((Vector2)root.position - center).sqrMagnitude;
             if (sqr < bestSqr)
             {
                 bestSqr = sqr;
-                best = t;
+                best = root;
             }
         }
 

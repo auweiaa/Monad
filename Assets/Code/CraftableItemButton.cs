@@ -12,7 +12,6 @@ public class CraftableItemButton : MonoBehaviour
 
     private void UpdateButtonInteractability()
     {
-        Debug.Log("UpdateButtonInteractability");
         button.interactable = towerData.Cost.CanAfford(resourceManager);
     }
     public void closeCraftingPanel()
