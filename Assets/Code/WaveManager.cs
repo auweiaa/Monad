@@ -20,13 +20,11 @@ public class WaveManager : MonoBehaviour
 
     [Header("EnemySpawner")]
     [SerializeField] private EnemySpawner[] enemySpawners;
-    [SerializeField] private Transform[]    spawnPoints;
     [SerializeField] private int levelForSpawner2 = 15;
     [SerializeField] private int levelForSpawner3 = 30;
 
 
     private int level;
-    private int nextWaveNr;
     private int activeSpawnersCount;
     private float breakTimer;
     private float countdownTimer;
@@ -51,12 +49,10 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
-        currentState = WaveState.Countdown;
-        countdownTimer = initialCountdown;
-        breakTimer = breakDuration;
         level = 0;
-        nextWaveNr = 1;
         activeSpawnersCount = 1;
+
+        EnterCountdownState();
 
         for (int i = 0; i < enemySpawners.Length; i++)
         {
@@ -68,30 +64,70 @@ public class WaveManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (currentState == WaveState.Countdown)
+        switch (currentState)
         {
-            countdownTimer -= Time.deltaTime;
+            case WaveState.Countdown:
+                UpdateCountDown();
+                if (countdownTimer <= 0f)
+                {
+                    HideCountdownText();
+                    StartNextWave();
+                }                    
+                break;
 
-            if (countdownText != null)
-            {
-                int secs = Mathf.CeilToInt(Mathf.Max(0f, countdownTimer));
-                countdownText.text = $"{nextWaveNr}. wave in {secs}s";
-            }
+            case WaveState.Break:
+                breakTimer -= Time.deltaTime;
+                if (breakTimer <= 0f) EnterCountdownState();
+                break;
 
-            if (countdownTimer <= 0f)
-            {
-                if (countdownText != null) countdownText.gameObject.SetActive(false);
-                currentState = WaveState.Break;
-                breakTimer   = 0f;
-            }
+            case WaveState.Waiting:
+                // Intentionally empty: waiting for wave completion driven by spawner events.
+                break;
+
+            default:
+                Debug.LogWarning($"[WaveManager] Unknown state: {currentState}");
+                break;
         }
+    }
 
-        if (currentState == WaveState.Break)
+
+    private void EnterCountdownState()
+    {
+        countdownTimer = initialCountdown;
+        ShowCountdownText();
+        currentState = WaveState.Countdown;
+
+        Debug.Log($"[WaveManager] Wave {level + 1} prepared. Starting Countdown");
+    }
+
+    private void EnterBreakState()
+    {
+        breakTimer = breakDuration;
+        currentState = WaveState.Break;
+
+        Debug.Log($"[WaveManager] Wave {level} completed. Break for {breakDuration}s.");
+    }
+
+    private void UpdateCountDown()
+    {
+        countdownTimer -= Time.deltaTime;
+
+        if (countdownText != null)
         {
-            breakTimer -= Time.deltaTime;
-
-            if (breakTimer <= 0f) StartNextWave();
+            int secs = Mathf.CeilToInt(Mathf.Max(0f, countdownTimer));
+            int upcomingWave = level + 1;
+            countdownText.text = $"Wave {upcomingWave} starts in {secs}s";
         }
+    }
+
+    private void ShowCountdownText()
+    {
+        if (countdownText != null) countdownText.gameObject.SetActive(true);
+    }
+
+    private void HideCountdownText()
+    {
+        if (countdownText != null) countdownText.gameObject.SetActive(false);
     }
 
     private void OnDestroy()
@@ -130,16 +166,12 @@ public class WaveManager : MonoBehaviour
         level++;
         activeSpawnersCount = GetActiveSpawnersCount(level);
 
-        Debug.Log($"[WaveManager] Starting wave {level} with {activeSpawnersCount} active spawner(s). Enemies per spawner: {enemiesToSpawn}, interval: {spawnIntervalInWave}s");
+        Debug.Log($"[WaveManager] Starting {level}. wave with {activeSpawnersCount} active spawner(s). Enemies per spawner: {enemiesToSpawn}, interval: {spawnIntervalInWave}s");
 
 
         for (int i = 0; i < activeSpawnersCount; i++)
         {
-            // Apply spawn point from WaveManager if one is assigned for this spawner.
-            if (spawnPoints != null && i < spawnPoints.Length && spawnPoints[i] != null)
-                enemySpawners[i].SetSpawnPoint(spawnPoints[i].position);
-
-            Debug.Log($"[WaveManager] Spawner {i}: {enemySpawners[i].name} begins wave");
+            Debug.Log($"[WaveManager] Spawner {i}: {enemySpawners[i].name} begins {level}. wave");
             enemySpawners[i].BeginWave(level, enemiesToSpawn, spawnIntervalInWave);
         }
 
@@ -183,17 +215,7 @@ public class WaveManager : MonoBehaviour
             }
         }
 
-        if (allSpawnerFinished && totalAliveEnemies == 0)
-        {
-            currentState = WaveState.Break;
-            breakTimer = breakDuration;
-
-            // prepare text for next Countdown
-            nextWaveNr++;
-
-            Debug.Log($"[WaveManager] Wave {level} completed. Break for {breakDuration}s.");
-
-        }
+        if (allSpawnerFinished && totalAliveEnemies == 0) EnterBreakState();
     }
 
 }

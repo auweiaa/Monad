@@ -68,9 +68,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enemyPrefab: {fileID: 0}
-  spawnInterval: 3
-  maxEnemies: 20
   targetPosition: {x: -5.285247, y: 0.3300301}
-  spawnRadius: 15
-  minSpawnDistance: 10
+  spawnRadius: 10
+  minSpawnDistance: 5
   enemySpeed: 2

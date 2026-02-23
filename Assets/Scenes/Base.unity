@@ -189736,6 +189736,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1312219672}
     m_Modifications:
+    - target: {fileID: 1183338072706710225, guid: 1cc107a9bbd21574b86033d9555f0200, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -34.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1183338072706710225, guid: 1cc107a9bbd21574b86033d9555f0200, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 19.3
+      objectReference: {fileID: 0}
     - target: {fileID: 1366542231841099999, guid: 1cc107a9bbd21574b86033d9555f0200, type: 3}
       propertyPath: countdownText
       value: 
@@ -189788,12 +189796,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5644542513857526907, guid: 1cc107a9bbd21574b86033d9555f0200, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6057595693163865319, guid: 1cc107a9bbd21574b86033d9555f0200, type: 3}
       propertyPath: enemySpeed
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 6057595693163865319, guid: 1cc107a9bbd21574b86033d9555f0200, type: 3}
+      propertyPath: spawnRadius
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6057595693163865319, guid: 1cc107a9bbd21574b86033d9555f0200, type: 3}
+      propertyPath: minSpawnDistance
+      value: 5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 7481053402910408581, guid: 1cc107a9bbd21574b86033d9555f0200, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1cc107a9bbd21574b86033d9555f0200, type: 3}
@@ -191740,7 +191761,7 @@ Camera:
   far clip plane: 1000.9
   field of view: 60
   orthographic: 1
-  orthographic size: 8.4375
+  orthographic size: 3.6241915
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
