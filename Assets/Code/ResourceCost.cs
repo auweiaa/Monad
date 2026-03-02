@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using UnityEngine;
 
 [Serializable]
@@ -38,6 +39,34 @@ public struct ResourceCost
             && resourceManager.GetStoneAmount() >= stone
             && resourceManager.GetIronAmount() >= iron
             && resourceManager.GetGoldAmount() >= gold;
+    }
+
+    public string GetCostDisplayString()
+    {
+        var builder = new StringBuilder(32);
+        AppendLineIfPositive(builder, wood, "wood");
+        AppendLineIfPositive(builder, stone, "stone");
+        AppendLineIfPositive(builder, iron, "iron");
+        AppendLineIfPositive(builder, gold, "gold");
+
+        return builder.Length > 0 ? builder.ToString() : "Free";
+    }
+
+    private static void AppendLineIfPositive(StringBuilder builder, int amount, string resourceName)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        if (builder.Length > 0)
+        {
+            builder.Append('\n');
+        }
+
+        builder.Append(amount);
+        builder.Append(' ');
+        builder.Append(resourceName);
     }
 }
 

@@ -84,7 +84,6 @@ public class Enemy : MonoBehaviour
         moveSpeed = Mathf.Max(0f, speed);
         // target is now handled by EnemyMovement (it finds Core by tag automatically)
     }
-
     private void OnDestroy()
     {
         if (spawner != null)
@@ -105,6 +104,8 @@ public class Enemy : MonoBehaviour
         final           = Mathf.Max(0f, final);
 
         currentHealth = Mathf.Clamp(currentHealth - final, 0f, maxHealth);
+        EnemyHealthBar enemyHealthBar = GetComponentInChildren<EnemyHealthBar>();
+        enemyHealthBar.Refresh(currentHealth, maxHealth);
 
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
@@ -143,6 +144,7 @@ public class Enemy : MonoBehaviour
     private void Die()
     {
         isAlive = false;
+        gameObject.GetComponentInChildren<SpriteRenderer>().enabled = false;
         OnDeath?.Invoke(this);
         OnHealthChanged?.Invoke(0f, maxHealth);
 
@@ -154,6 +156,6 @@ public class Enemy : MonoBehaviour
         if (col != null) col.enabled = false;
 
         // Destroy the GameObject (extend delay if you want a death animation)
-        Destroy(gameObject, 0.1f);
+        Destroy(gameObject, 0.5f);
     }
 }
