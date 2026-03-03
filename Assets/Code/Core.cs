@@ -21,6 +21,7 @@ public class Core : MonoBehaviour
     [SerializeField] private float explosionDuration = 5f;
 
     public event Action<float> HealthChanged; // currentHealth
+    public event Action OnCoreDeathEvent; // Fired when core dies
 
     private Vector3 orbBaseOffset;
 
@@ -79,7 +80,8 @@ public class Core : MonoBehaviour
     private void OnCoreDestroyed()
     {
         UnityEngine.Debug.Log("Core has been destroyed!");
-        // Add additional logic here (game over, effects, etc.)
+        
+        OnCoreDeathEvent?.Invoke();
         
         if (coreParticleSystems != null && coreParticleSystems.Length > 0)
         {
