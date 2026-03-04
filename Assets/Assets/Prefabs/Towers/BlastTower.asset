@@ -21,7 +21,7 @@ MonoBehaviour:
   footprint: {x: 1, y: 1}
   projectilePrefab: {fileID: 7805623665364096366, guid: 5fc15f478f80242d68fcde968f3838a3, type: 3}
   cost:
-    wood: 15
+    wood: 20
     stone: 5
     iron: 1
     gold: 0

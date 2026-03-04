@@ -72,7 +72,10 @@ public class TowerSelectionController : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0))
         {
-            HandleLeftClick();
+            if (placementManager == null || !placementManager.PlacementConsumedClickThisFrame)
+            {
+                HandleLeftClick();
+            }
         }
 
         if (CurrentSelection == null)

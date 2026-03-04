@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Animator))]
+ [RequireComponent(typeof(Collider2D))]
 public class PlayerMovement : MonoBehaviour
 {
 
@@ -39,6 +40,7 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private Rigidbody2D rb2D;
+    [SerializeField] private Collider2D movementCollider;
     [SerializeField] private Animator animator;
 
     [Header("Animator parameters (Blend Tree)")]
@@ -72,12 +74,14 @@ public class PlayerMovement : MonoBehaviour
     {
         animator = GetComponent<Animator>();
         rb2D = GetComponent<Rigidbody2D>();
+        movementCollider = GetComponent<Collider2D>();
     }
 
     void Awake()
     {
         if (animator == null) animator = GetComponent<Animator>();
         if (rb2D == null)rb2D = GetComponent<Rigidbody2D>();
+        if (movementCollider == null) movementCollider = GetComponent<Collider2D>();
         if (dustAnchor == null) dustAnchor = (rb2D != null) ? rb2D.transform : transform;
         if (dustParticles != null)
         {
@@ -276,6 +280,11 @@ public class PlayerMovement : MonoBehaviour
         }
 
         Vector2 delta = moveDir * moveSpeed * Time.fixedDeltaTime;
+        delta = GetAllowedMovementDelta(delta);
+        if (delta.sqrMagnitude <= 0.000001f)
+        {
+            return;
+        }
 
         if (rb2D != null)
         {
@@ -285,6 +294,61 @@ public class PlayerMovement : MonoBehaviour
         {
             transform.position += (Vector3)delta;
         }
+    }
+
+    private Vector2 GetAllowedMovementDelta(Vector2 desiredDelta)
+    {
+        if (!WouldHitBarrier(desiredDelta))
+        {
+            return desiredDelta;
+        }
+
+        // Try axis-aligned fallback so the player can slide along barrier edges.
+        Vector2 xOnly = new Vector2(desiredDelta.x, 0f);
+        if (xOnly.sqrMagnitude > 0.000001f && !WouldHitBarrier(xOnly))
+        {
+            return xOnly;
+        }
+
+        Vector2 yOnly = new Vector2(0f, desiredDelta.y);
+        if (yOnly.sqrMagnitude > 0.000001f && !WouldHitBarrier(yOnly))
+        {
+            return yOnly;
+        }
+
+        return Vector2.zero;
+    }
+
+    private bool WouldHitBarrier(Vector2 delta)
+    {
+        if (movementCollider == null || delta.sqrMagnitude <= 0.000001f)
+        {
+            return false;
+        }
+
+        ContactFilter2D filter = new ContactFilter2D
+        {
+            useTriggers = true,
+            useLayerMask = false
+        };
+
+        RaycastHit2D[] hits = new RaycastHit2D[8];
+        int hitCount = movementCollider.Cast(delta.normalized, filter, hits, delta.magnitude);
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider2D hitCollider = hits[i].collider;
+            if (hitCollider == null || hitCollider == movementCollider)
+            {
+                continue;
+            }
+
+            if (hitCollider.CompareTag("barrier") || hitCollider.transform.root.CompareTag("barrier"))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void UpdateAnimator()

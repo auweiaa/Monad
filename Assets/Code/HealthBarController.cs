@@ -14,6 +14,10 @@ public class HealthBarController : MonoBehaviour
         }
     }
 
+    void Start(){
+        UpdateBar(core.CurrentHealth);
+    }
+
     void OnEnable()
     {
         if (core == null)

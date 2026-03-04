@@ -194,7 +194,7 @@ MonoBehaviour:
   maxAStarIterations: 2000
   repathsPerFrame: 2
   attackRange: 1.5
-  attackDamage: 5
+  attackDamage: 1
   attackInterval: 1
   moveXParam: X
   moveYParam: Y

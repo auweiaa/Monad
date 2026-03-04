@@ -8,6 +8,7 @@ TagManager:
   - CraftingPanel
   - Enemy
   - Core
+  - barrier
   layers:
   - Default
   - TransparentFX

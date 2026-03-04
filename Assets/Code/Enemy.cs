@@ -27,7 +27,7 @@ public class Enemy : MonoBehaviour
     [SerializeField] private float moveSpeed = 10f;
 
     [Header("Attack Stats")]
-    [SerializeField] private float attackDamage = 5f;
+    [SerializeField] private float attackDamage = 2f;
     [SerializeField] private float attackInterval = 1f;
     [SerializeField] private float attackModeDistance = 3f;
 

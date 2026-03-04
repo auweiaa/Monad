@@ -3,6 +3,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.Tilemaps;
 using System.Collections.Generic;
 
+[DefaultExecutionOrder(-100)]
 public class PlacementManager : MonoBehaviour
 {
     [Header("References")]
@@ -29,6 +30,8 @@ public class PlacementManager : MonoBehaviour
 
     private readonly HashSet<Vector3Int> occupiedCells = new HashSet<Vector3Int>();
     public bool IsInPlacementMode => selectedTower != null;
+    public bool PlacementConsumedClickThisFrame => placementConsumedClickThisFrame;
+    private bool placementConsumedClickThisFrame;
 
     /// <summary>Raised whenever the occupied-cell set changes (e.g. tower placed).</summary>
     public event System.Action OnGridChanged;
@@ -88,10 +91,16 @@ public class PlacementManager : MonoBehaviour
         {
             if (TryPlaceSelectedAtMouse())
             {
+                placementConsumedClickThisFrame = true;
                 // Auto-cancel after a successful placement.
                 ClearSelection();
             }
         }
+    }
+
+    private void LateUpdate()
+    {
+        placementConsumedClickThisFrame = false;
     }
 
     private bool TryPlaceSelectedAtMouse()
