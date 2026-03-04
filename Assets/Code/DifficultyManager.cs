@@ -22,7 +22,7 @@ public class DifficultyManager : MonoBehaviour
     }
     private int GetEnemyAmountMultiplier(int baseEnemyCount, int level)
     {
-        return baseEnemyCount + level / 5;
+        return baseEnemyCount + level / 2;
     }
 
 

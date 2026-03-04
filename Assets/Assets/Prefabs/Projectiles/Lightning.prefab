@@ -5129,7 +5129,7 @@ CircleCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -5147,14 +5147,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80f75ff553f5049918b21afc3f9a2a3f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 30
+  speed: 10
+  targetReachDistance: 0.3
   rotationOffsetDegrees: 90
   enemyTag: Enemy
+  enemyLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   maxLifetimeSeconds: 5
   maxEnemiesHit: 3
-  bounceRadius: 2.5
+  bounceRadius: 20
+  fallbackRadiusMultiplier: 3
   explosion: {fileID: 2121010171761061547}
   sprite: {fileID: 1307745863080214252}
+  debugChainLogs: 1
+  debugDrawBounceRadius: 1
 --- !u!1 &7777710810659860867
 GameObject:
   m_ObjectHideFlags: 0

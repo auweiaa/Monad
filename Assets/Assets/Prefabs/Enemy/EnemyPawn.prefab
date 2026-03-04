@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8945633173696492585}
   - component: {fileID: 7564071959509755548}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: EnemyPawn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -63,6 +63,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8945633173696492585}
     m_Modifications:
+    - target: {fileID: 4676606931648303066, guid: 44a032c726210e84097299ef82f913d4, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 5276931312463344966, guid: 44a032c726210e84097299ef82f913d4, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -106,6 +110,14 @@ PrefabInstance:
     - target: {fileID: 6234862148909132280, guid: 44a032c726210e84097299ef82f913d4, type: 3}
       propertyPath: m_Name
       value: Knight (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6234862148909132280, guid: 44a032c726210e84097299ef82f913d4, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6315215654646284475, guid: 44a032c726210e84097299ef82f913d4, type: 3}
+      propertyPath: m_Layer
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 8843336991130770140, guid: 44a032c726210e84097299ef82f913d4, type: 3}
       propertyPath: m_AnchorMax.x

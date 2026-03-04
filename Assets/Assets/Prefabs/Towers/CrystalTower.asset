@@ -17,7 +17,7 @@ MonoBehaviour:
   range: 5
   health: 10
   damage: 10
-  attackSpeed: 1
+  attackSpeed: 2
   footprint: {x: 3, y: 3}
   projectilePrefab: {fileID: 6427851651625820337, guid: ed19d093d52d1475cb0a1a7378c77ac3, type: 3}
   cost:

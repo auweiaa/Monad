@@ -3,14 +3,17 @@ using UnityEngine;
 
 public class LightningProjectile : MonoBehaviour, ITowerProjectile
 {
-
     [Header("Movement")]
     [SerializeField, Min(0f)] private float speed = 8f;
+    [Tooltip("Distance to target at which the projectile counts as arrived and deals damage.")]
+    [SerializeField, Min(0.01f)] private float targetReachDistance = 0.3f;
     [Tooltip("Rotation offset in degrees if your sprite doesn't face +X (right) by default. Example: if it faces up (+Y), set -90.")]
     [SerializeField] private float rotationOffsetDegrees = 0f;
 
     [Header("Hit Filtering")]
     [SerializeField] private string enemyTag = "Enemy";
+    [Tooltip("Optional layer filter for bounce search. Leave as Everything to search all layers.")]
+    [SerializeField] private LayerMask enemyLayerMask = ~0;
 
     [Header("Lifetime")]
     [SerializeField, Min(0f)] private float maxLifetimeSeconds = 5f;
@@ -20,10 +23,16 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
     [SerializeField, Min(1)] private int maxEnemiesHit = 3;
     [Tooltip("Search radius from the last hit point for the next bounce target.")]
     [SerializeField, Min(0f)] private float bounceRadius = 2.5f;
+    [Tooltip("If no target is found from the hit point, retry from projectile position with this radius multiplier.")]
+    [SerializeField, Min(1f)] private float fallbackRadiusMultiplier = 1.75f;
 
     [Header("Effects")]
     [SerializeField] private ParticleSystem explosion;
     [SerializeField] private GameObject sprite;
+
+    [Header("Debug")]
+    [SerializeField] private bool debugChainLogs = false;
+    [SerializeField] private bool debugDrawBounceRadius = false;
 
     private Transform target;
     private int damage;
@@ -36,21 +45,24 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
     private Rigidbody2D rb;
     private Collider2D col;
     private Vector2 lastDirection = Vector2.right;
+    private Vector2 lastBounceCenter;
+    private bool hasPendingTriggerHit;
+    private Vector2 pendingTriggerBounceCenter;
 
     private void Awake()
     {
-
         if (explosion != null)
         {
             explosion.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             explosion.Clear(true);
         }
-        // Ensure we can use trigger callbacks + kinematic motion.
+
         rb = GetComponent<Rigidbody2D>();
         if (rb == null)
         {
             rb = gameObject.AddComponent<Rigidbody2D>();
         }
+
         rb.bodyType = RigidbodyType2D.Kinematic;
         rb.simulated = true;
         rb.gravityScale = 0f;
@@ -60,6 +72,7 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
         {
             col = gameObject.AddComponent<CircleCollider2D>();
         }
+
         col.isTrigger = true;
     }
 
@@ -68,26 +81,28 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
         age = 0f;
         hitCount = 0;
         isEnding = false;
+        hasPendingTriggerHit = false;
         hitEnemies.Clear();
 
-        this.target = target;
+        this.target = NormalizeAimTransform(target);
         damage = towerData != null ? towerData.Damage : 0;
 
         if (sprite != null)
         {
             sprite.SetActive(true);
         }
+
         if (explosion != null)
         {
             explosion.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             explosion.Clear(true);
         }
+
         if (col != null)
         {
             col.enabled = true;
         }
 
-        // Initialize heading so it moves even if target disappears immediately.
         if (target != null)
         {
             Vector2 toTarget = (Vector2)target.position - rb.position;
@@ -117,18 +132,35 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
             return;
         }
 
-        Vector2 pos = rb.position;
-        Vector2 dir = lastDirection;
-
-        if (target != null)
+        if (!ValidateOrAcquireTarget())
         {
-            Vector2 toTarget = (Vector2)target.position - pos;
-            if (toTarget.sqrMagnitude > 0.0001f)
-            {
-                dir = toTarget.normalized;
-                lastDirection = dir;
-            }
+            return;
         }
+
+        Vector2 pos = rb.position;
+        Vector2 toTarget = (Vector2)target.position - pos;
+        bool reachedByDistance = toTarget.sqrMagnitude <= targetReachDistance * targetReachDistance;
+        bool reachedByTrigger = hasPendingTriggerHit;
+
+        if (reachedByDistance || reachedByTrigger)
+        {
+            // Use actual impact position when arriving by distance; root pivots can be offset.
+            Vector2 bounceCenter = reachedByTrigger ? pendingTriggerBounceCenter : rb.position;
+            hasPendingTriggerHit = false;
+
+            if (!TryGetEnemyFromTransform(target, out Transform enemyRoot, out Enemy enemy))
+            {
+                target = null;
+                TryResolveInvalidTarget();
+                return;
+            }
+
+            ResolveHitAndAdvance(enemyRoot, enemy, bounceCenter);
+            return;
+        }
+
+        Vector2 dir = toTarget.sqrMagnitude > 0.0001f ? toTarget.normalized : lastDirection;
+        lastDirection = dir;
 
         rb.MovePosition(pos + dir * speed * Time.fixedDeltaTime);
 
@@ -146,43 +178,114 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
             return;
         }
 
-        // Tag is on root; collider may be on a child
-        if (!other.transform.root.CompareTag(enemyTag))
+        if (!TryGetEnemyFromCollider(other, out Transform enemyRoot, out Enemy enemy))
         {
             return;
         }
 
-        Transform root = other.transform.root;
-        if (root == null)
+        // Strict current-target policy: ignore incidental collisions.
+        if (!IsCurrentTarget(enemyRoot))
         {
             return;
         }
 
-        if (hitEnemies.Contains(root))
+        if (enemy == null || enemy.IsDead)
         {
             return;
         }
 
-        // Record hit + deal damage once.
-        hitEnemies.Add(root);
-        hitCount++;
-        var enemy = root.GetComponent<Enemy>();
-        if (enemy != null)
+        hasPendingTriggerHit = true;
+        pendingTriggerBounceCenter = other.ClosestPoint(rb != null ? rb.position : (Vector2)transform.position);
+    }
+
+    private bool ValidateOrAcquireTarget()
+    {
+        if (TryGetEnemyFromTransform(target, out Transform enemyRoot, out Enemy enemy))
         {
-            enemy.TakeDamage((float)damage);
+            target = NormalizeAimTransform(target);
+            return true;
         }
 
-        // Prevent immediate re-triggering on the same collider as we bounce away.
-        if (col != null)
+        target = null;
+        return TryResolveInvalidTarget();
+    }
+
+    private bool TryResolveInvalidTarget()
+    {
+        Vector2 center = rb != null ? rb.position : (Vector2)transform.position;
+        if (!TryFindNextTargetWithFallback(center, out Transform next, out float usedRadius))
         {
-            Physics2D.IgnoreCollision(col, other, true);
-        }
-        if (explosion != null)
-        {
-            explosion.Clear(true);
-            explosion.Play(true);
+            if (debugChainLogs)
+            {
+                Debug.Log($"[LightningProjectile:{GetInstanceID()}] No valid target. Destroying.", this);
+            }
+            EndProjectile();
+            return false;
         }
 
+        target = next;
+        hasPendingTriggerHit = false;
+
+        Vector2 toTarget = (Vector2)target.position - center;
+        if (toTarget.sqrMagnitude > 0.0001f)
+        {
+            lastDirection = toTarget.normalized;
+        }
+
+        if (debugChainLogs)
+        {
+            Debug.Log($"[LightningProjectile:{GetInstanceID()}] Reacquired target '{target.name}' (radius {usedRadius:0.00}).", this);
+        }
+
+        return true;
+    }
+
+    private bool IsCurrentTarget(Transform enemyRoot)
+    {
+        if (enemyRoot == null || target == null)
+        {
+            return false;
+        }
+
+        if (target == enemyRoot)
+        {
+            return true;
+        }
+
+        Enemy targetEnemy = target.GetComponentInParent<Enemy>();
+        return targetEnemy != null && targetEnemy.transform == enemyRoot;
+    }
+
+    private void ResolveHitAndAdvance(Transform enemyRoot, Enemy enemy, Vector2 bounceCenter)
+    {
+        if (enemyRoot == null || enemy == null)
+        {
+            EndProjectile();
+            return;
+        }
+
+        bool alreadyHit = hitEnemies.Contains(enemyRoot);
+        if (!alreadyHit)
+        {
+            hitEnemies.Add(enemyRoot);
+            hitCount++;
+
+            if (!enemy.IsDead)
+            {
+                enemy.TakeDamage((float)damage);
+            }
+
+            if (debugChainLogs)
+            {
+                Debug.Log($"[LightningProjectile:{GetInstanceID()}] Hit '{enemyRoot.name}' ({hitCount}/{Mathf.Max(1, maxEnemiesHit)}).", this);
+            }
+
+            if (explosion != null)
+            {
+                explosion.Clear(true);
+                explosion.Play(true);
+            }
+        }
 
         if (hitCount >= Mathf.Max(1, maxEnemiesHit))
         {
@@ -190,41 +293,75 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
             return;
         }
 
-        Vector2 bounceCenter = other.ClosestPoint(rb != null ? rb.position : (Vector2)transform.position);
-        Transform next = FindNextTarget(bounceCenter);
-        if (next == null)
+        lastBounceCenter = bounceCenter;
+
+        if (!TryFindNextTargetWithFallback(bounceCenter, out Transform next, out float usedRadius))
         {
+            if (debugChainLogs)
+            {
+                Debug.Log($"[LightningProjectile:{GetInstanceID()}] No bounce target found after '{enemyRoot.name}'. Destroying.", this);
+            }
+
             EndProjectile();
             return;
         }
 
         target = next;
+        hasPendingTriggerHit = false;
 
-        // Immediately refresh heading toward the new target.
-        if (rb != null)
+        Vector2 currentPosition = rb != null ? rb.position : (Vector2)transform.position;
+        Vector2 toTarget = (Vector2)target.position - currentPosition;
+        if (toTarget.sqrMagnitude > 0.0001f)
         {
-            Vector2 toTarget = (Vector2)target.position - rb.position;
-            if (toTarget.sqrMagnitude > 0.0001f)
-            {
-                lastDirection = toTarget.normalized;
-            }
+            lastDirection = toTarget.normalized;
+        }
+
+        if (debugChainLogs)
+        {
+            float targetDist = Vector2.Distance(lastBounceCenter, target.position);
+            Debug.Log($"[LightningProjectile:{GetInstanceID()}] Bouncing to '{target.name}' (distance {targetDist:0.00}, radius {usedRadius:0.00}).", this);
         }
     }
 
-    private Transform FindNextTarget(Vector2 center)
+    private bool TryFindNextTargetWithFallback(Vector2 center, out Transform next, out float usedRadius)
     {
-        if (bounceRadius <= 0f)
+        usedRadius = bounceRadius;
+        next = FindNextTarget(center, bounceRadius);
+        if (next != null)
+        {
+            return true;
+        }
+
+        if (fallbackRadiusMultiplier <= 1f)
+        {
+            return false;
+        }
+
+        usedRadius = bounceRadius * fallbackRadiusMultiplier;
+        next = FindNextTarget(center, usedRadius);
+        return next != null;
+    }
+
+    private Transform FindNextTarget(Vector2 center, float radius)
+    {
+        if (radius <= 0f)
         {
             return null;
         }
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(center, bounceRadius);
+        // Explicit semantics: "Nothing" mask means no candidates.
+        if (enemyLayerMask.value == 0)
+        {
+            return null;
+        }
+
+        Collider2D[] hits = Physics2D.OverlapCircleAll(center, radius, enemyLayerMask);
         if (hits == null || hits.Length == 0)
         {
             return null;
         }
 
-        Transform best = null;
+        Transform bestAim = null;
         float bestSqr = float.PositiveInfinity;
 
         for (int i = 0; i < hits.Length; i++)
@@ -235,27 +372,105 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
                 continue;
             }
 
-            // Tag is on root; collider may be on a child
-            if (!c.transform.root.CompareTag(enemyTag))
+            if (!TryGetEnemyFromCollider(c, out Transform enemyRoot, out Enemy enemy))
             {
                 continue;
             }
 
-            Transform root = c.transform.root;
-            if (root == null || hitEnemies.Contains(root))
+            if (enemy == null || enemy.IsDead || hitEnemies.Contains(enemyRoot))
             {
                 continue;
             }
 
-            float sqr = ((Vector2)root.position - center).sqrMagnitude;
+            // Use collider geometry instead of transform pivot for robust selection.
+            Vector2 candidatePoint = c.ClosestPoint(center);
+            float sqr = (candidatePoint - center).sqrMagnitude;
             if (sqr < bestSqr)
             {
                 bestSqr = sqr;
-                best = root;
+                bestAim = NormalizeAimTransform(c.attachedRigidbody != null ? c.attachedRigidbody.transform : c.transform);
             }
         }
 
-        return best;
+        return bestAim;
+    }
+
+    private Transform NormalizeAimTransform(Transform candidate)
+    {
+        if (candidate == null)
+        {
+            return null;
+        }
+
+        Rigidbody2D rbCandidate = candidate.GetComponentInChildren<Rigidbody2D>();
+        if (rbCandidate != null)
+        {
+            return rbCandidate.transform;
+        }
+
+        Collider2D colliderCandidate = candidate.GetComponentInChildren<Collider2D>();
+        if (colliderCandidate != null)
+        {
+            return colliderCandidate.transform;
+        }
+
+        return candidate;
+    }
+
+    private bool TryGetEnemyFromTransform(Transform candidate, out Transform enemyRoot, out Enemy enemy)
+    {
+        enemyRoot = null;
+        enemy = null;
+
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        enemy = candidate.GetComponentInParent<Enemy>();
+        if (enemy == null || enemy.IsDead)
+        {
+            return false;
+        }
+
+        enemyRoot = enemy.transform;
+        if (!string.IsNullOrEmpty(enemyTag) && !enemyRoot.CompareTag(enemyTag))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool TryGetEnemyFromCollider(Collider2D c, out Transform enemyRoot, out Enemy enemy)
+    {
+        enemyRoot = null;
+        enemy = null;
+
+        if (c == null)
+        {
+            return false;
+        }
+
+        Transform candidate = c.attachedRigidbody != null ? c.attachedRigidbody.transform : c.transform;
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        enemy = candidate.GetComponentInParent<Enemy>();
+        if (enemy == null || enemy.IsDead)
+        {
+            return false;
+        }
+
+        enemyRoot = enemy.transform;
+        if (!string.IsNullOrEmpty(enemyTag) && !enemyRoot.CompareTag(enemyTag))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private void EndProjectile()
@@ -264,7 +479,9 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
         {
             return;
         }
+
         isEnding = true;
+        hasPendingTriggerHit = false;
 
         if (col != null)
         {
@@ -285,4 +502,20 @@ public class LightningProjectile : MonoBehaviour, ITowerProjectile
         Destroy(gameObject, 1f);
     }
 
+    private void OnDrawGizmosSelected()
+    {
+        if (!debugDrawBounceRadius || bounceRadius <= 0f)
+        {
+            return;
+        }
+
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, bounceRadius);
+
+        if (Application.isPlaying)
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(lastBounceCenter, bounceRadius);
+        }
+    }
 }

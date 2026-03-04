@@ -81,7 +81,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 689e42b452b7cf14e8f8206ca7381183, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  amount: 10
+  amount: 15
   isDepleted: 0
   threeDepletedSprites: 1
   defaultSprite: {fileID: 5829587950840881809}
