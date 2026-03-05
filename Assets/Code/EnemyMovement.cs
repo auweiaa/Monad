@@ -8,11 +8,14 @@ public class EnemyMovement : MonoBehaviour
     [Header("Pathfinding")]
     [SerializeField] private string coreTag = "Core";
     [SerializeField] private float  waypointReachRadius = 0.25f;
-    [SerializeField] private int    maxAStarIterations  = 2000;
+    [SerializeField] private int    maxAStarIterations  = 20000;
     
     [Header("Repath Scheduling")]
     [Tooltip("How many enemies may recalculate their path per frame after a grid change.")]
     [SerializeField, Min(1)] private int repathsPerFrame = 2;
+    [SerializeField] private float repathRetryDelay = 0.5f;
+    private float repathRetryTimer = 0f;
+    private bool lastRepathHitIterationCapacity = false;
 
     [Header("Attack")]
     [SerializeField] private float attackRange    = 1.5f;
@@ -149,6 +152,17 @@ public class EnemyMovement : MonoBehaviour
         // No path found: accept defeat and stand still.
         if (!hasPath || waypoints.Count == 0)
         {
+            // Retry mechanics
+            if (lastRepathHitIterationCapacity)
+            {
+                repathRetryTimer -= Time.deltaTime;
+                if (repathRetryTimer <= 0f)
+                {
+                    repathRetryTimer = repathRetryDelay;
+                    RecalculatePath();
+                }
+            }
+
             UpdateAnimator(Vector2.zero);
             return;
         }
@@ -228,7 +242,17 @@ public class EnemyMovement : MonoBehaviour
         Vector3Int end   = grid.WorldToCell(coreTransform.position);
 
         List<Vector3Int> cellPath = FindPath(start, end);
-        if (cellPath == null || cellPath.Count == 0) return; // no path  give up
+        if (cellPath == null || cellPath.Count == 0)
+        {
+            hasPath = false;
+            waypoints.Clear();
+
+            // retry if itereation capacity was reason for not finding a path
+            if (lastRepathHitIterationCapacity) repathRetryTimer = repathRetryDelay;
+
+            return;
+        }
+
 
         foreach (Vector3Int cell in cellPath)
             waypoints.Add(grid.GetCellCenterWorld(cell));
@@ -297,6 +321,8 @@ public class EnemyMovement : MonoBehaviour
         gScore[start] = 0f;
         heap.Push(start, Heuristic(start, end));
 
+        lastRepathHitIterationCapacity = false;
+
         int iter = 0;
         while (heap.Count > 0 && iter++ < maxAStarIterations)
         {
@@ -319,6 +345,18 @@ public class EnemyMovement : MonoBehaviour
                 }
             }
         }
+
+        if (heap.Count <= 0)
+        {
+            Debug.LogWarning($"[EnemyMovement] All paths were blocked");
+        }
+
+        if (iter >= maxAStarIterations)
+        {
+            lastRepathHitIterationCapacity = true;
+            Debug.LogWarning($"[EnemyMovement] A* hit iteration capacity ({maxAStarIterations}). start={start} end={end}");
+        }
+
         return null;
     }
 

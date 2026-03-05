@@ -191,8 +191,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   coreTag: Core
   waypointReachRadius: 0.25
-  maxAStarIterations: 2000
+  maxAStarIterations: 20000
   repathsPerFrame: 2
+  repathRetryDelay: 0.5
   attackRange: 1.5
   attackDamage: 1
   attackInterval: 1
