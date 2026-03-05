@@ -19,6 +19,7 @@ public class WaveManager : MonoBehaviour
     [Header("WaveSetting")]
     [SerializeField] private float initialCountdown   = 60f;
     [SerializeField] private float breakDuration      = 5f;
+    [SerializeField] private float baseWaveDuration      = 20f;
     [SerializeField] private float baseEnemySpawnInterval = 0.5f;
     [SerializeField] private int baseEnemyCount = 10;
 
@@ -30,7 +31,9 @@ public class WaveManager : MonoBehaviour
     [SerializeField]
     private DifficultyManager difficultyManager;
 
+    private float currentWaveDuration;
     private int level;
+    private bool startWaveCountdown;
 
     [SerializeField] private TextMeshProUGUI levelText;
     private int activeSpawnersCount;
@@ -74,6 +77,9 @@ public class WaveManager : MonoBehaviour
 
         level = 0;
         activeSpawnersCount = 1;
+
+        currentWaveDuration = baseWaveDuration;
+
         if (spawnArrowIndicatorUI == null)
         {
             spawnArrowIndicatorUI = FindFirstObjectByType<SpawnArrowIndicatorUI>();
@@ -108,7 +114,8 @@ public class WaveManager : MonoBehaviour
                 break;
 
             case WaveState.Waiting:
-                // Intentionally empty: waiting for wave completion driven by spawner events.
+                // waiting for wave duration to end
+                if (startWaveCountdown) UpdateCurrentWaveDuration();
                 break;
 
             default:
@@ -134,6 +141,13 @@ public class WaveManager : MonoBehaviour
 
         Debug.Log($"[WaveManager] Wave {level} completed. Break for {breakDuration}s.");
     }
+    private void EnterWaitingState()
+    {
+        currentState = WaveState.Waiting;
+        //countdown starts when alle enemies have spawned
+        startWaveCountdown = false; 
+        currentWaveDuration = baseWaveDuration;
+    }
 
     private void UpdateCountDown()
     {
@@ -147,6 +161,11 @@ public class WaveManager : MonoBehaviour
         }
     }
 
+    private void UpdateCurrentWaveDuration()
+    {
+        if (currentWaveDuration <= 0f) CheckWaveCompletion();
+        currentWaveDuration -= Time.deltaTime;
+    }
     private void ShowCountdownText()
     {
         if (countdownText != null) countdownPanel.gameObject.SetActive(true);
@@ -193,6 +212,7 @@ public class WaveManager : MonoBehaviour
         level++;
         levelText.text = level.ToString();
         activeSpawnersCount = GetActiveSpawnersCount(level);
+        
 
         WaveConfiguration waveConfig = difficultyManager.BuildWaveConfiguration(level, baseEnemyCount, baseEnemySpawnInterval);
         
@@ -212,7 +232,7 @@ public class WaveManager : MonoBehaviour
             spawnArrowIndicatorUI.ShowForSpawners(activeSpawners, spawnArrowDuration);
         }
 
-        currentState = WaveState.Waiting;
+        EnterWaitingState();
 
         CheckWaveCompletion();
     }
@@ -231,7 +251,7 @@ public class WaveManager : MonoBehaviour
     
     private void OnSpawnerStatusChanged(EnemySpawner spawner)
     {
-        if (currentState != WaveState.Waiting) return;
+        //if (currentState != WaveState.Waiting) return;
 
         CheckWaveCompletion();
     }
@@ -252,7 +272,11 @@ public class WaveManager : MonoBehaviour
             }
         }
 
-        if (allSpawnerFinished && totalAliveEnemies == 0) EnterBreakState();
+        if (allSpawnerFinished) startWaveCountdown = true;        
+
+        if(currentWaveDuration <= 0f || totalAliveEnemies == 0) {
+            EnterBreakState();
+        }
     }
 
 }
