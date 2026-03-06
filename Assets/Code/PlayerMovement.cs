@@ -515,28 +515,28 @@ public class PlayerMovement : MonoBehaviour
         PlayGatherParticles("wood");
         SoundManager.Instance.PlaySfx2D("wood");
         LabelManager.Instance.SpawnLabel("+5 Wood", transform.position);
-        if (resourceManager != null) resourceManager.SetWoodAmount(5);
+        if (resourceManager != null) resourceManager.AddWoodAmount(5);
     }
     private void CollectStone()
     {
         PlayGatherParticles("stone");
         SoundManager.Instance.PlaySfx2D("stone");
         LabelManager.Instance.SpawnLabel("+1 Stone", transform.position);
-        if (resourceManager != null) resourceManager.SetStoneAmount(1);
+        if (resourceManager != null) resourceManager.AddStoneAmount(1);
     }
     private void CollectIron()
     {
         PlayGatherParticles("iron");
         SoundManager.Instance.PlaySfx2D("stone");
         LabelManager.Instance.SpawnLabel("+1 Iron", transform.position);
-        if (resourceManager != null) resourceManager.SetIronAmount(1);
+        if (resourceManager != null) resourceManager.AddIronAmount(1);
     }
     private void CollectGold()
     {
         PlayGatherParticles("gold");
         SoundManager.Instance.PlaySfx2D("stone");
         LabelManager.Instance.SpawnLabel("+1 Gold", transform.position);
-        if (resourceManager != null) resourceManager.SetGoldAmount(1);
+        if (resourceManager != null) resourceManager.AddGoldAmount(1);
     }
 
     private void PlayGatherParticles(string resourceType)

@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 public class ResourceManager : MonoBehaviour
 {
@@ -19,6 +20,9 @@ public class ResourceManager : MonoBehaviour
     [Header("Pop animation")]
     [SerializeField] private float popScale = 1.35f;
     [SerializeField] private float popDuration = 0.2f;
+
+    private Dictionary<TextMeshProUGUI, Coroutine> runningPopCoroutines = new Dictionary<TextMeshProUGUI, Coroutine>();
+    private Dictionary<TextMeshProUGUI, Vector3> baseScales = new Dictionary<TextMeshProUGUI, Vector3>();
 
     public event Action ResourcesChanged;
 
@@ -38,36 +42,36 @@ public class ResourceManager : MonoBehaviour
     {
         return goldAmount;
     }
-    public void SetWoodAmount(int amount)
+    public void AddWoodAmount(int amount)
     {
         woodAmount += amount;
-        updateUI();
-        if (woodAmountText != null) StartCoroutine(PopText(woodAmountText));
+        UpdateUI();
+        PlayPop(woodAmountText);
     }
-    public void SetStoneAmount(int amount)
+    public void AddStoneAmount(int amount)
     {
         stoneAmount += amount;
-        updateUI();
-        if (stoneAmountText != null) StartCoroutine(PopText(stoneAmountText));
+        UpdateUI();
+        PlayPop(stoneAmountText);
     }
-    public void SetIronAmount(int amount)
+    public void AddIronAmount(int amount)
     {
         ironAmount += amount;
-        updateUI();
-        if (ironAmountText != null) StartCoroutine(PopText(ironAmountText));
+        UpdateUI();
+        PlayPop(ironAmountText);
     }
-    public void SetGoldAmount(int amount)
+    public void AddGoldAmount(int amount)
     {
         goldAmount += amount;
-        updateUI();
-        if (goldAmountText != null) StartCoroutine(PopText(goldAmountText));
+        UpdateUI();
+        PlayPop(goldAmountText);
     }
 
-    public void SetScore(int amount)
+    public void AddScore(int amount)
     {
         score += amount;
-        updateUI();
-        if (scoreText != null) StartCoroutine(PopText(scoreText));
+        UpdateUI();
+        PlayPop(scoreText);
     }
 
     public bool CanAfford(ResourceCost cost)
@@ -85,18 +89,33 @@ public class ResourceManager : MonoBehaviour
         {
             return false;
         }
-        SetWoodAmount(cost.wood * -1);
-        SetStoneAmount(cost.stone * -1);
-        SetIronAmount(cost.iron * -1);
-        SetGoldAmount(cost.gold * -1);
+        AddWoodAmount(cost.wood * -1);
+        AddStoneAmount(cost.stone * -1);
+        AddIronAmount(cost.iron * -1);
+        AddGoldAmount(cost.gold * -1);
         return true;
     }
-    void Start()
+
+    private void SaveBaseScale(TextMeshProUGUI text)
     {
-        updateUI();
+        if (text != null && !baseScales.ContainsKey(text))
+        {
+            baseScales[text] = text.rectTransform.localScale;
+        }
     }
 
-    void updateUI()
+    void Start()
+    {
+        SaveBaseScale(woodAmountText);
+        SaveBaseScale(stoneAmountText);
+        SaveBaseScale(ironAmountText);
+        SaveBaseScale(goldAmountText);
+        SaveBaseScale(scoreText);
+        
+        UpdateUI();
+    }
+
+    void UpdateUI()
     {
         ResourcesChanged?.Invoke();
         if (woodAmountText != null) woodAmountText.text = woodAmount.ToString();
@@ -106,12 +125,25 @@ public class ResourceManager : MonoBehaviour
         if (scoreText != null) scoreText.text = score.ToString();
     }
 
+    private void PlayPop(TextMeshProUGUI text)
+    {
+        if (text == null || !baseScales.ContainsKey(text)) return;
+
+        if (runningPopCoroutines.TryGetValue(text, out Coroutine running))
+        {
+            StopCoroutine(running);
+        }
+
+        text.rectTransform.localScale = baseScales[text];
+        runningPopCoroutines[text] = StartCoroutine(PopText(text));
+    }
+
     private IEnumerator PopText(TextMeshProUGUI text)
     {
-        if (text == null) yield break;
+        if (text == null || !baseScales.ContainsKey(text)) yield break;
 
         RectTransform rt = text.rectTransform;
-        Vector3 originalScale = rt.localScale;
+        Vector3 originalScale = baseScales[text];
         Vector3 targetScale = originalScale * popScale;
 
         float elapsed = 0f;
@@ -133,5 +165,6 @@ public class ResourceManager : MonoBehaviour
         }
 
         rt.localScale = originalScale;
+        runningPopCoroutines.Remove(text);
     }
 }

@@ -150,7 +150,7 @@ public class Enemy : MonoBehaviour
         OnHealthChanged?.Invoke(0f, maxHealth);
         ResourceManager resourceManager = FindFirstObjectByType<ResourceManager>();
         if (resourceManager != null)
-            resourceManager.SetScore(1);
+            resourceManager.AddScore(1);
 
         // Disable physics to avoid lingering collisions
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
