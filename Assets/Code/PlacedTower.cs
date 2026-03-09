@@ -17,6 +17,7 @@ public class PlacedTower : MonoBehaviour
         towerData  = data;
         originCell = origin;
         this.footprint = footprint;
+        registeredWithPlacementManager = true;
     }
 
     private void Start()
@@ -53,6 +54,7 @@ public class PlacedTower : MonoBehaviour
     private void OnDestroy()
     {
         if (!registeredWithPlacementManager) return;
+
         PlacementManager pm = FindFirstObjectByType<PlacementManager>();
         if (pm != null)
             pm.FreeCells(originCell, footprint);

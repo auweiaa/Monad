@@ -389,4 +389,15 @@ public class PlacementManager : MonoBehaviour
     {
         return new HashSet<Vector3Int>(occupiedCells);
     }
+
+    public bool RemoveTower(PlacedTower tower)
+    {
+        if (tower == null)
+        {
+            return false;
+        }
+
+        Destroy(tower.gameObject);
+        return true;
+    }
 }
