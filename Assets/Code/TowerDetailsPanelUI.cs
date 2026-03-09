@@ -9,6 +9,7 @@ public class TowerDetailsPanelUI : MonoBehaviour
     [SerializeField] private TowerSelectionController selectionController;
     [SerializeField] private GameObject panelRoot;
     [SerializeField] private PlacementManager placementManager;
+    [SerializeField] private ResourceManager resourceManager;
 
     [Header("Details Text")]
     [SerializeField] private TMP_Text towerNameText;
@@ -62,6 +63,11 @@ public class TowerDetailsPanelUI : MonoBehaviour
         else
         {
             SetPanelVisible(false);
+        }
+
+        if (resourceManager == null)
+        {
+            resourceManager = FindFirstObjectByType<ResourceManager>();
         }
     }
 
@@ -179,10 +185,14 @@ public class TowerDetailsPanelUI : MonoBehaviour
             return;
         }
 
+        if (resourceManager != null && currentTower != null && currentTower.TowerData != null)
+        {
+            resourceManager.RefundHalf(currentTower.TowerData.Cost);
+        }
+
         if (placementManager != null)
         {
             placementManager.RemoveTower(currentTower);
-            Debug.Log("Call Remove");
         }
         else
         {

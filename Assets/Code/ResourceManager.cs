@@ -167,4 +167,35 @@ public class ResourceManager : MonoBehaviour
         rt.localScale = originalScale;
         runningPopCoroutines.Remove(text);
     }
+
+    public void RefundHalf(ResourceCost cost)
+    {
+        cost = cost.ClampNonNegative();
+
+        int woodRefund = Mathf.RoundToInt(cost.wood * 0.5f);
+        int stoneRefund = Mathf.RoundToInt(cost.stone * 0.5f);
+        int ironRefund = Mathf.RoundToInt(cost.iron * 0.5f);
+        int goldRefund = Mathf.RoundToInt(cost.gold * 0.5f);
+
+        // the Add-functions trigger a text pop up, so only call if a real change happened
+        if (woodRefund > 0)
+        {
+            AddWoodAmount(woodRefund);
+        }
+
+        if (stoneRefund > 0)
+        {
+            AddStoneAmount(stoneRefund);
+        }
+
+        if (ironRefund > 0)
+        {
+            AddIronAmount(ironRefund);
+        }
+
+        if (goldRefund > 0)
+        {
+            AddGoldAmount(goldRefund);
+        }
+    }
 }
