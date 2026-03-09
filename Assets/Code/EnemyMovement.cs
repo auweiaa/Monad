@@ -115,6 +115,27 @@ public class EnemyMovement : MonoBehaviour
         RecalculatePath();
     }
 
+    private void OnEnable()
+    {
+        if (placementManager == null)
+        {
+            placementManager = FindFirstObjectByType<PlacementManager>();
+        }
+
+        if (placementManager != null)
+        {
+            placementManager.RegisterEnemy(this);
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (placementManager != null)
+        {
+            placementManager.UnregisterEnemy(this);
+        }
+    }
+
     private void OnDestroy()
     {
         if (placementManager != null)

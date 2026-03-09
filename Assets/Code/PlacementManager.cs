@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Tilemaps;
 using System.Collections.Generic;
+using TMPro;
+using System.Collections;
 
 [DefaultExecutionOrder(-100)]
 public class PlacementManager : MonoBehaviour
@@ -28,13 +30,35 @@ public class PlacementManager : MonoBehaviour
     [Tooltip("Parent for placed tower instances (optional).")]
     [SerializeField] private Transform placedTowersParent;
 
+    [Header("Build Warning")]
+    [SerializeField] private TMP_Text buildWarningText;
+    [SerializeField] private float buildWarningDuration = 3f;
+
+    [Header("Path Blocking Check")]
+    [SerializeField] private string coreTag = "Core";
+    [SerializeField] private EnemySpawner[] enemySpawners;
+
+    private Transform coreTransform;
+    private Coroutine buildWarningCoroutine;
+
     private readonly HashSet<Vector3Int> occupiedCells = new HashSet<Vector3Int>();
     public bool IsInPlacementMode => selectedTower != null;
     public bool PlacementConsumedClickThisFrame => placementConsumedClickThisFrame;
     private bool placementConsumedClickThisFrame;
 
+    private readonly List<EnemyMovement> activeEnemies = new List<EnemyMovement>();
+
+
     /// <summary>Raised whenever the occupied-cell set changes (e.g. tower placed).</summary>
     public event System.Action OnGridChanged;
+
+    private static readonly Vector3Int[] PathDirections =
+    {
+        new Vector3Int(1, 0, 0),
+        new Vector3Int(-1, 0, 0),
+        new Vector3Int(0, 1, 0),
+        new Vector3Int(0, -1, 0)
+    };
 
     private void Awake()
     {
@@ -59,6 +83,22 @@ public class PlacementManager : MonoBehaviour
             {
                 groundTilemap = allTilemaps[0];
             }
+        }
+
+        if (enemySpawners == null || enemySpawners.Length == 0)
+        {
+            enemySpawners = FindObjectsByType<EnemySpawner>(FindObjectsSortMode.None);
+        }
+
+        GameObject coreObject = GameObject.FindGameObjectWithTag(coreTag);
+        if (coreObject != null)
+        {
+            coreTransform = coreObject.transform;
+        }
+
+        if (buildWarningText != null)
+        {
+            buildWarningText.gameObject.SetActive(false);
         }
     }
 
@@ -126,6 +166,12 @@ public class PlacementManager : MonoBehaviour
 
         if (!CanPlaceAt(originCell, selectedTower.Footprint))
         {
+            return false;
+        }
+
+        if (WouldBlockPaths(originCell, selectedTower.Footprint))
+        {
+            ShowBuildWarning();
             return false;
         }
 
@@ -400,4 +446,173 @@ public class PlacementManager : MonoBehaviour
         Destroy(tower.gameObject);
         return true;
     }
+
+    private void ShowBuildWarning()
+    {
+        if (buildWarningText == null)
+        {
+            return;
+        }
+
+        if (buildWarningCoroutine != null)
+        {
+            StopCoroutine(buildWarningCoroutine);
+        }
+
+        buildWarningCoroutine = StartCoroutine(ShowBuildWarningRoutine());
+    }
+
+    private IEnumerator ShowBuildWarningRoutine()
+    {
+        buildWarningText.gameObject.SetActive(true);
+        yield return new WaitForSeconds(buildWarningDuration);
+        buildWarningText.gameObject.SetActive(false);
+        buildWarningCoroutine = null;
+    }
+
+
+    private bool HasPath(Vector3Int startCell, Vector3Int targetCell)
+    {
+        if (groundTilemap == null)
+        {
+            return false;
+        }
+
+        if (!groundTilemap.HasTile(startCell) || !groundTilemap.HasTile(targetCell))
+        {
+            return false;
+        }
+
+        Queue<Vector3Int> open = new Queue<Vector3Int>();
+        HashSet<Vector3Int> visited = new HashSet<Vector3Int>();
+
+        open.Enqueue(startCell);
+        visited.Add(startCell);
+
+        while (open.Count > 0)
+        {
+            Vector3Int current = open.Dequeue();
+
+            if (current == targetCell)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < PathDirections.Length; i++)
+            {
+                Vector3Int next = current + PathDirections[i];
+
+                if (visited.Contains(next))
+                {
+                    continue;
+                }
+
+                if (!groundTilemap.HasTile(next))
+                {
+                    continue;
+                }
+
+                if (occupiedCells.Contains(next) && next != targetCell)
+                {
+                    continue;
+                }
+
+                visited.Add(next);
+                open.Enqueue(next);
+            }
+        }
+
+        return false;
+    }
+
+    private bool WouldBlockPaths(Vector3Int originCell, Vector2Int footprint)
+    {
+        if (grid == null || groundTilemap == null || coreTransform == null)
+        {
+            return false;
+        }
+
+        List<Vector3Int> temporarilyBlockedCells = new List<Vector3Int>();
+
+        foreach (var cell in EnumerateFootprintCells(originCell, footprint))
+        {
+            if (occupiedCells.Add(cell))
+            {
+                temporarilyBlockedCells.Add(cell);
+            }
+        }
+
+        Vector3Int coreCell = grid.WorldToCell(coreTransform.position);
+        bool wouldBlock = false;
+
+        if (enemySpawners != null)
+        {
+            for (int i = 0; i < enemySpawners.Length; i++)
+            {
+                EnemySpawner spawner = enemySpawners[i];
+                if (spawner == null)
+                {
+                    continue;
+                }
+
+                Vector3Int spawnerCell = grid.WorldToCell(spawner.transform.position);
+
+                if (!HasPath(spawnerCell, coreCell))
+                {
+                    wouldBlock = true;
+                    break;
+                }
+            }
+        }
+
+        if (!wouldBlock)
+        {
+            for (int i = activeEnemies.Count - 1; i >= 0; i--)
+            {
+                EnemyMovement enemy = activeEnemies[i];
+
+                if (enemy == null)
+                {
+                    activeEnemies.RemoveAt(i);
+                    continue;
+                }
+
+                Vector3Int enemyCell = grid.WorldToCell(enemy.transform.position);
+
+                if (!HasPath(enemyCell, coreCell))
+                {
+                    wouldBlock = true;
+                    break;
+                }
+            }
+        }
+
+        for (int i = 0; i < temporarilyBlockedCells.Count; i++)
+        {
+            occupiedCells.Remove(temporarilyBlockedCells[i]);
+        }
+
+        return wouldBlock;
+    }
+
+    public void RegisterEnemy(EnemyMovement enemy)
+    {
+        if (enemy == null || activeEnemies.Contains(enemy))
+        {
+            return;
+        }
+
+        activeEnemies.Add(enemy);
+    }
+
+    public void UnregisterEnemy(EnemyMovement enemy)
+    {
+        if (enemy == null)
+        {
+            return;
+        }
+
+        activeEnemies.Remove(enemy);
+    }
+
 }
